@@ -1,0 +1,33 @@
+============================================================
+RUN: run4_fast_steps20_size512_torchOff
+============================================================
+
+Timestamp: 2025-11-23 12:04:59
+Notes: 8 place settings explicit - fast cache
+
+SETTINGS:
+  - NUM_STEPS: 20
+  - SEED: 42
+  - MAX_SIZE: 512
+  - CACHE_MODE: fast
+
+PIPELINE STEPS:
+  1. chairs: chairs/clear_chiavari.png
+  2. tablecloth: tablecloths/satin_red.png
+  3. plates: plates/white_with_gold_rim.png
+  4. napkins: napkins/satin_pink.png
+  5. cutlery: cutlery/gold_luxe.png
+  6. glassware: glassware/crystal_wine_glass.png
+  7. centerpiece: centerpieces/pink_flowral_with_gold_stand.png
+
+STEP TIMES:
+  - chairs            18.5s
+  - tablecloth        17.7s
+  - plates            17.6s
+  - napkins           17.7s
+  - cutlery           17.7s
+  - glassware         17.4s
+  - centerpiece       17.5s
+
+TOTAL TIME: 126.6s
+AVG PER STEP: 18.1s
