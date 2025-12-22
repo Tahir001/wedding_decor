@@ -1,0 +1,18 @@
+WEDDING DECOR PIPELINE V5
+==================================================
+Strategy: Fine details first → Big changes last
+Date: 2025-12-22 07:23:59
+Model: Qwen-Image-Edit-2509 + Lightning 8-step
+Image Size: 1024x1024
+Ref Size: 384x384
+
+STEPS:
+  1. centerpiece     15.60s
+  2. glassware       15.50s
+  3. cutlery         15.58s
+  4. napkins         15.51s
+  5. plates          15.57s
+  6. tablecloth      15.59s
+  7. chairs          15.59s
+
+TOTAL: 108.95s
