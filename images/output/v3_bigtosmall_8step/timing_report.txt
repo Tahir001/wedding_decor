@@ -1,0 +1,21 @@
+WEDDING DECOR PIPELINE V3 - TIMING REPORT
+==================================================
+
+Date: 2025-12-22 07:08:51
+Model: Qwen-Image-Edit-2509 + Lightning 8-step LoRA
+Steps: 8
+Strategy: Big to Small
+
+STEP TIMES:
+--------------------------------------------------
+  Step 1: chairs          15.28s
+  Step 2: tablecloth      15.19s
+  Step 3: plates          15.20s
+  Step 4: napkins         15.13s
+  Step 5: cutlery         15.20s
+  Step 6: glassware       15.37s
+  Step 7: centerpiece     15.38s
+--------------------------------------------------
+  INFERENCE TOTAL:    106.74s
+  AVERAGE PER STEP:   15.25s
+  PIPELINE TOTAL:     108.68s

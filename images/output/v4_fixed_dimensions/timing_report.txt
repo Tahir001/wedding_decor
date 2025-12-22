@@ -1,0 +1,20 @@
+WEDDING DECOR PIPELINE V4 - FIXED DIMENSIONS
+==================================================
+
+Date: 2025-12-22 07:14:48
+Model: Qwen-Image-Edit-2509 + Lightning 8-step
+Fixed Dimensions: 1024x1024
+Reference Size: 512x512
+
+STEP TIMES:
+--------------------------------------------------
+  Step 1: chairs          15.57s
+  Step 2: tablecloth      15.56s
+  Step 3: plates          15.49s
+  Step 4: napkins         15.47s
+  Step 5: cutlery         15.54s
+  Step 6: glassware       15.54s
+  Step 7: centerpiece     15.48s
+--------------------------------------------------
+  INFERENCE TOTAL:    108.64s
+  AVERAGE PER STEP:   15.52s
