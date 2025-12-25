@@ -1,5 +1,5 @@
 TEST 1: IMAGE FUSION
-Date: 2025-12-25 10:12:11.233775
+Date: 2025-12-25 10:26:05.823240
 Steps per generation: 8
 
 Process:
@@ -7,7 +7,7 @@ Process:
 2. Fuse Image A + Image 6.5 (centerpiece) → Image B
 
 Timing:
-1. Image A (chairs + tabletop): 10.58s
-2. Image B (A + centerpiece): 10.58s
+1. Image A (chairs + tabletop): 10.59s
+2. Image B (A + centerpiece): 10.59s
 
-Total: 21.16s
+Total: 21.18s

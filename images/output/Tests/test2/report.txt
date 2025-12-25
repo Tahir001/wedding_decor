@@ -1,18 +1,18 @@
 TEST 2: SEQUENTIAL EDITS
-Date: 2025-12-25 10:12:54.351618
+Date: 2025-12-25 10:26:49.389761
 Steps per generation: 8
 
 Process:
 1. Base: 4.5 tabletop with gold cutlery, gold charger plate
-2. Change charger plates → classic
-3. Change cutlery → silver
-4. Add napkins → pink satin
-5. Remove table → floating products
+2. ONLY change charger plates → classic (nothing else)
+3. ONLY change cutlery → silver (nothing else)
+4. ONLY add napkins → pink satin (nothing else)
+5. Remove table legs and chairs → floating tabletop (keep all items on top)
 
 Timing:
-1. Charger plates → classic: 10.59s
-2. Cutlery → silver: 10.63s
-3. Napkins → pink satin: 10.59s
-4. Remove table → floating: 10.65s
+1. Charger plates → classic: 10.66s
+2. Cutlery → silver: 10.68s
+3. Napkins → pink satin: 10.66s
+4. Remove legs/chairs → floating tabletop: 10.69s
 
-Total: 42.45s
+Total: 42.69s

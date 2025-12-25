@@ -308,8 +308,12 @@ def run_test2(pipeline):
     cutlery_ref.save(os.path.join(TEST2_OUTPUT, "ref_cutlery_silver.png"))
     napkin_ref.save(os.path.join(TEST2_OUTPUT, "ref_napkin_pink.png"))
     
-    # Step 1: Change charger plates
-    prompt_1 = "Replace the charger plates with these classic charger plates matching the reference. Keep the gold cutlery and all other elements exactly as they are."
+    # Step 1: Change charger plates ONLY
+    prompt_1 = """ONLY replace the charger plates with the charger plates shown in the reference image. 
+DO NOT change ANYTHING else in the image. 
+Keep the exact same gold cutlery in the exact same positions. 
+Keep the exact same table, tablecloth, napkins, glasses, and all other elements EXACTLY as they are. 
+The ONLY change should be the charger plates matching the reference image style."""
     
     result_1, time_1 = run_edit(
         pipeline,
@@ -323,8 +327,13 @@ def run_test2(pipeline):
     step_times.append({"name": "Charger plates → classic", "time": time_1})
     current_image = result_1
     
-    # Step 2: Change cutlery to silver
-    prompt_2 = "Replace the gold cutlery with elegant silver cutlery matching the reference. Fork on left, knife and spoon on right. Keep charger plates and all other elements exactly as they are."
+    # Step 2: Change cutlery to silver ONLY
+    prompt_2 = """ONLY replace the cutlery with the silver cutlery shown in the reference image. 
+DO NOT change ANYTHING else in the image. 
+Keep the exact same charger plates in the exact same positions. 
+Keep the exact same table, tablecloth, napkins, glasses, and all other elements EXACTLY as they are. 
+The ONLY change should be the cutlery - replace gold cutlery with silver cutlery matching the reference. 
+Fork stays on the left, knife and spoon stay on the right, same positions as before."""
     
     result_2, time_2 = run_edit(
         pipeline,
@@ -338,8 +347,13 @@ def run_test2(pipeline):
     step_times.append({"name": "Cutlery → silver", "time": time_2})
     current_image = result_2
     
-    # Step 3: Change napkin to pink satin
-    prompt_3 = "Add elegant pink satin napkins folded beautifully on each plate, matching the reference. Keep the silver cutlery, charger plates, and all other elements exactly as they are."
+    # Step 3: Add napkin ONLY
+    prompt_3 = """ONLY add pink satin napkins matching the reference image onto each plate. 
+DO NOT change ANYTHING else in the image. 
+Keep the exact same charger plates in the exact same positions. 
+Keep the exact same silver cutlery in the exact same positions. 
+Keep the exact same table, tablecloth, glasses, and all other elements EXACTLY as they are. 
+The ONLY addition should be the pink satin napkins folded elegantly on the plates."""
     
     result_3, time_3 = run_edit(
         pipeline,
@@ -353,21 +367,25 @@ def run_test2(pipeline):
     step_times.append({"name": "Napkins → pink satin", "time": time_3})
     current_image = result_3
     
-    # Step 4: Remove table, products float
-    # For this step, we use the current image as both base and reference
-    prompt_4 = "Remove the table completely. The tabletop items including the charger plates, cutlery, napkins, and all place settings should float elegantly in the air against a clean background. No table visible."
+    # Step 4: Remove table legs and chairs, keep tabletop intact
+    prompt_4 = """Remove ONLY the table legs and any chairs from the image. 
+Keep the ENTIRE tabletop surface and EVERYTHING on top of it EXACTLY as they are. 
+The tabletop with all the place settings, charger plates, silver cutlery, pink napkins, glasses - ALL of this must remain EXACTLY the same and intact. 
+Only remove the table legs and chairs so the tabletop appears to float. 
+Replace the removed legs and chairs with a clean, neutral background. 
+DO NOT modify, move, or change any items on the tabletop surface."""
     
     result_4, time_4 = run_edit(
         pipeline,
         current_image,
-        resize_reference(current_image),  # Use current as reference
+        resize_reference(current_image),  # Use current as reference to preserve tabletop
         prompt_4,
-        "Remove table → floating products",
+        "Remove legs/chairs → floating tabletop",
         4
     )
-    result_4.save(os.path.join(TEST2_OUTPUT, "step_4_floating_products.png"))
+    result_4.save(os.path.join(TEST2_OUTPUT, "step_4_floating_tabletop.png"))
     result_4.save(os.path.join(TEST2_OUTPUT, "FINAL_RESULT.png"))
-    step_times.append({"name": "Remove table → floating", "time": time_4})
+    step_times.append({"name": "Remove legs/chairs → floating tabletop", "time": time_4})
     
     # Summary
     print("\n" + "-" * 50)
@@ -385,10 +403,10 @@ def run_test2(pipeline):
         f.write(f"Steps per generation: {NUM_STEPS}\n\n")
         f.write("Process:\n")
         f.write("1. Base: 4.5 tabletop with gold cutlery, gold charger plate\n")
-        f.write("2. Change charger plates → classic\n")
-        f.write("3. Change cutlery → silver\n")
-        f.write("4. Add napkins → pink satin\n")
-        f.write("5. Remove table → floating products\n\n")
+        f.write("2. ONLY change charger plates → classic (nothing else)\n")
+        f.write("3. ONLY change cutlery → silver (nothing else)\n")
+        f.write("4. ONLY add napkins → pink satin (nothing else)\n")
+        f.write("5. Remove table legs and chairs → floating tabletop (keep all items on top)\n\n")
         f.write("Timing:\n")
         for i, s in enumerate(step_times, 1):
             f.write(f"{i}. {s['name']}: {s['time']:.2f}s\n")
