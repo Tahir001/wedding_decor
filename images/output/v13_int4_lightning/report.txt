@@ -1,0 +1,28 @@
+============================================================
+WEDDING DECOR PIPELINE V13 - INT4 LIGHTNING REPORT
+============================================================
+
+Date: 2026-01-02 11:48:20
+GPU: NVIDIA GeForce RTX 4090
+Precision: INT4
+Rank: 128
+Lightning steps: 8
+VRAM mode: offload
+
+TIMING:
+----------------------------------------
+1. chairs: 8 steps, 31.45s
+2. tablecloth: 8 steps, 29.28s
+3. plates: 8 steps, 30.14s
+4. napkins: 8 steps, 31.05s
+5. cutlery: 8 steps, 30.97s
+6. glassware: 8 steps, 31.21s
+7. centerpiece: 8 steps, 31.55s
+----------------------------------------
+Inference total: 215.65s
+Pipeline total: 217.50s
+
+COST:
+RTX 4090: $0.0205
+PRO 6000: $0.1112
+Savings: 81.5%

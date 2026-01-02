@@ -1,0 +1,17 @@
+WEDDING DECOR V14 - FAST MODE
+========================================
+Date: 2026-01-02 12:41:31.010464
+GPU: NVIDIA GeForce RTX 4090
+
+TIMING:
+1. chairs: 22.94s
+2. tablecloth: 19.23s
+3. plates: 20.68s
+4. napkins: 20.53s
+5. cutlery: 20.53s
+6. glassware: 19.81s
+7. centerpiece: 18.92s
+
+Total inference: 142.64s
+Total pipeline: 144.54s
+Cost: $0.0137
