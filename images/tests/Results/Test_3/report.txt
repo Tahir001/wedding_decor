@@ -1,0 +1,26 @@
+Test 3 Test Report
+==================================================
+Date: 2026-01-06 05:54:31.810450
+Total operations: 20
+Total time: 4m 11.0s
+
+✅ tablecloth_champagne_pintuck (edit) - 12.57s
+✅ chairs_ghost_phoenix (edit) - 12.60s
+✅ charger_plates_purple (edit) - 12.68s
+✅ table_removal_set3 (table_removal) - 12.53s
+✅ fusion_chargers (fusion) - 12.44s
+✅ cutlery_black (edit) - 12.42s
+✅ table_removal_set4 (table_removal) - 12.51s
+✅ fusion_cutlery (fusion) - 12.49s
+✅ plates_white (edit) - 12.61s
+✅ table_removal_set5 (table_removal) - 12.52s
+✅ fusion_plates (fusion) - 12.61s
+✅ napkins_champagne (edit) - 12.49s
+✅ table_removal_set6 (table_removal) - 12.40s
+✅ fusion_napkins (fusion) - 12.52s
+✅ centerpiece_purple_black (edit) - 12.51s
+✅ table_removal_set7 (table_removal) - 12.61s
+✅ fusion_centerpiece (fusion) - 12.61s
+✅ glassware_wine (edit) - 12.64s
+✅ table_removal_set8 (table_removal) - 12.59s
+✅ fusion_final (fusion) - 12.69s
