@@ -1,0 +1,25 @@
+============================================================
+V12-B: 2511 WITH SAME STEPS AS V11 (Direct Comparison)
+============================================================
+
+Date: 2026-01-10 00:32:33.178603
+Model: Qwen/Qwen-Image-Edit-2511
+LoRA: Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+Total steps: 50 (SAME as V11)
+
+TIMING:
+1. chairs: 6 steps, 7.89s
+2. tablecloth: 6 steps, 7.95s
+3. plates: 6 steps, 8.01s
+4. napkins: 8 steps, 10.62s
+5. cutlery: 8 steps, 10.76s
+6. glassware: 8 steps, 10.83s
+7. centerpiece: 8 steps, 10.90s
+
+Total: 66.96s
+
+WHAT TO LOOK FOR:
+- Are chairs preserved in later steps? (image drift)
+- Is the tablecloth consistent throughout?
+- Are plates/napkins/cutlery staying in place?
+- Overall quality of final result?
