@@ -85,19 +85,19 @@ PIPELINE_STEPS = [
     },
     {
         "name": "cutlery",
-        "steps": 8,
+        "steps": 4,
         "ref_image": "cutlery/gold_luxe.png",
         "prompt": f"Add the gold cutlery from image 2 beside each plate in image 1. Fork on left, knife and spoon on right. 8 place settings.",
     },
     {
         "name": "glassware",
-        "steps": 8,
+        "steps": 4,
         "ref_image": "glassware/crystal_wine_glass.png",
         "prompt": f"Add the crystal wine glass from image 2 to each place setting in image 1. 8 glasses positioned above the knives.",
     },
     {
         "name": "centerpiece",
-        "steps": 8,
+        "steps": 4,
         "ref_image": "centerpieces/pink_flowral_with_gold_stand.png",
         "prompt": "Add the pink rose centerpiece from image 2 to the center of the table in image 1. Keep all place settings around it.",
     },
