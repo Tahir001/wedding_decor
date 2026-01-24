@@ -1,0 +1,36 @@
+V12C - 8 Place Settings @ 768x768
+==================================================
+
+Date: 2026-01-24 07:20:33.612965
+Model: Qwen/Qwen-Image-Edit-2511
+LoRA: Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+PROMPTS (Qwen official style):
+--------------------------------------------------
+1. chairs: Replace all chairs in image 1 with the gold chiavari chairs from image 2. Place 8 chairs evenly around the round table.
+
+2. tablecloth: Replace the tablecloth in image 1 with the red satin tablecloth from image 2. Keep the 8 gold chiavari chairs around the table.
+
+3. plates: Add 8 dinner plates from image 2 to the table in image 1. One plate at each place setting on the red tablecloth.
+
+4. napkins: Add the pink napkin from image 2 to each plate in image 1. 8 napkins folded on the plates.
+
+5. cutlery: Add the gold cutlery from image 2 beside each plate in image 1. Fork on left, knife and spoon on right. 8 place settings.
+
+6. glassware: Add the crystal wine glass from image 2 to each place setting in image 1. 8 glasses positioned above the knives.
+
+7. centerpiece: Add the pink rose centerpiece from image 2 to the center of the table in image 1. Keep all place settings around it.
+
+--------------------------------------------------
+
+TIMING:
+1. chairs: 4 steps, 8.46s
+2. tablecloth: 4 steps, 8.47s
+3. plates: 4 steps, 8.47s
+4. napkins: 4 steps, 8.46s
+5. cutlery: 8 steps, 16.53s
+6. glassware: 8 steps, 16.53s
+7. centerpiece: 8 steps, 16.54s
+
+Total inference: 83.45s
+Total wall time: 84.52s

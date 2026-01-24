@@ -1,0 +1,13 @@
+V12C-FAST - 6 Settings @ 640x640
+==================================================
+
+Total Wall Time: 59.97s
+Inference Time:  59.21s
+
+1. chairs: 8.47s
+2. tablecloth: 8.46s
+3. plates: 8.45s
+4. napkins: 8.45s
+5. cutlery: 8.46s
+6. glassware: 8.45s
+7. centerpiece: 8.46s

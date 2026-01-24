@@ -1,0 +1,13 @@
+Version 11 Clean & Fast
+Date: 2025-12-23 14:25:17.544546
+Total inference steps: 50
+
+1. chairs: 6 steps, 8.03s
+2. tablecloth: 6 steps, 8.02s
+3. plates: 6 steps, 8.02s
+4. napkins: 8 steps, 10.57s
+5. cutlery: 8 steps, 10.65s
+6. glassware: 8 steps, 10.65s
+7. centerpiece: 8 steps, 10.65s
+
+Total: 66.59s
