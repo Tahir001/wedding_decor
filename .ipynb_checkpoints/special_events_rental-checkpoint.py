@@ -22,11 +22,11 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 # DIRS
 ROOT_DIR = "/workspace/wedding_decor/images/SpecialEventsRentals"
-TABLECLOTH_DIR = os.path.join(ROOT_DIR, "table_cloths_red")
-OUTPUT_DIR = os.path.join(ROOT_DIR, "output/table_cloths_red")
+TABLECLOTH_DIR = os.path.join(ROOT_DIR, "table_cloths_quick_test")
+OUTPUT_DIR = os.path.join(ROOT_DIR, "output/table_cloths_quick_test_results_8")
 
 # IMAGES
-BASE_IMAGE_PATH = os.path.join(ROOT_DIR, "base_image_table.png")
+BASE_IMAGE_PATH = os.path.join(ROOT_DIR, "base_image_table_traffeta.png")
 
 # DIMENSIONS
 FIXED_WIDTH = 1024
@@ -39,9 +39,11 @@ LORA_REPO = "lightx2v/Qwen-Image-Edit-2511-Lightning"
 LORA_WEIGHTS = "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
 
 # INFERENCE SETTINGS
-STEPS = 4
-TRUE_CFG = 3.0
-GUIDANCE = 1.0
+STEPS = 6
+
+# CFG settings
+TRUE_CFG_SCALE = 1.5
+GUIDANCE_SCALE = 1.0
 SEED = 42
 
 # =============================================================================
@@ -71,15 +73,16 @@ def load_pipeline():
     # Clean memory
     gc.collect()
     torch.cuda.empty_cache()
-    
+
     scheduler_config = {
         "base_image_seq_len": 256,
-        "base_shift": math.log(3),
+        "base_shift": 1.15,
         "invert_sigmas": False,
         "max_image_seq_len": 8192,
-        "max_shift": math.log(3),
+        "max_shift": 1.15,
         "num_train_timesteps": 1000,
         "shift": 1.0,
+        "shift_terminal": None,
         "stochastic_sampling": False,
         "time_shift_type": "exponential",
         "use_beta_sigmas": False,
@@ -138,8 +141,8 @@ def run_batch_tablecloths():
             image=[base_image_fixed, resize_reference(base_image_fixed)],
             prompt="warmup",
             num_inference_steps=STEPS,
-            true_cfg_scale=TRUE_CFG,
-            guidance_scale=GUIDANCE
+            true_cfg_scale=TRUE_CFG_SCALE,
+            guidance_scale=GUIDANCE_SCALE
         )
 
     # 5. Iterate
@@ -163,10 +166,8 @@ def run_batch_tablecloths():
 
             # Construct Prompt
             # We use a generic prompt relying on Image 2 to provide the texture/color info
-            # prompt = "Replace the tablecloth in image 1 with the tablecloth texture and color from image 2. Keep the 8 gold chiavari chairs around the table."
-            prompt = (
-                " Replace the tablecloth in image 1 with the tablecloth from image 2. Match image 2's exact color, texture, and pattern. Nothing else should change in image 1."
-            )
+            prompt = "In image 1, replace the tablecloth with the material and texture from image 2. Make the new tablecloth perfectly flat, ironed, and 100% crease-free, as a steamed tablecloth. Ignore any folds or wrinkles found in image 2. Keep everything else the same."
+            # prompt = "Replace the tablecloth in image 1 with the tablecloth texture and color from image 2. The tablecloth must drape smoothly without wrinkles or creases. Keep everything else from image 1 the same."
 
             # Run Inference
             start_time = time.time()
@@ -174,13 +175,13 @@ def run_batch_tablecloths():
                 result = pipeline(
                     image=[base_image_fixed, ref_image],
                     prompt=prompt,
-                    negative_prompt="distortion, blurry, low quality",
+                    negative_prompt = "fabric creases, fabric folds, wrinkles, wavy edges, distorted silver, uneven cloth",
                     num_inference_steps=STEPS,
-                    true_cfg_scale=TRUE_CFG,
-                    guidance_scale=GUIDANCE,
+                    true_cfg_scale=TRUE_CFG_SCALE,
+                    guidance_scale=GUIDANCE_SCALE,
                     generator=torch.Generator("cuda").manual_seed(SEED)
                 ).images[0]
-            
+    
             # Save
             if result.size != (FIXED_WIDTH, FIXED_HEIGHT):
                 result = resize_to_fixed(result)
