@@ -1,107 +1,120 @@
 """
 ===============================================================================
-WEDDING DECOR VISUALIZATION - PIPELINE V12C (QWEN-IMAGE-EDIT-2511)
+WEDDING DECOR - TABLECLOTH EXPERIMENT GRID (QWEN-IMAGE-EDIT-2511 + LIGHTNING)
 ===============================================================================
-CHANGES:
-1. 768x768 main image, 384x384 reference
-2. 6 place settings (testing vs 8)
-3. Prompts rewritten to match Qwen official style:
-   - Simple, direct instructions
-   - Explicit "image 1" and "image 2" references
-   - Natural language, not verbose
+Grid-search experiment runner that tests tablecloth swaps with different
+hyperparameter combinations.
+
+32 experiments total (4 true_cfg_scale x 2 num_inference_steps x 2 negative
+prompts x 2 prompt styles), each producing 4 tablecloth images = 128 images.
+
+Usage:
+    python experiments_2511_model.py                  # run all 32 experiments
+    python experiments_2511_model.py --dry-run        # print grid, don't run
+    python experiments_2511_model.py --experiment 5   # run only experiment 5
+    python experiments_2511_model.py --output-dir /custom/path
 ===============================================================================
 """
 
 import os
 import gc
+import sys
 import time
 import math
+import argparse
+import itertools
 import torch
 from PIL import Image
 from datetime import datetime
 from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 # =============================================================================
-# CONFIGURATION
+# PATHS (relative to this script's directory)
 # =============================================================================
 
-INPUT_DIR = "/workspace/wedding_decor/images"
-OUTPUT_DIR = "/workspace/wedding_decor/images/output/v12c_768_6settings"
-BASE_IMAGE = "base_image_table.png"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
+BASE_IMAGE = os.path.join(INPUT_DIR, "base_image.png")
 
-# === IMAGE DIMENSIONS ===
-FIXED_WIDTH = 1024
-FIXED_HEIGHT = 1024
-REF_SIZE = 384
+# =============================================================================
+# TABLECLOTH REFERENCES
+# =============================================================================
 
-# === PLACE SETTINGS ===
-NUM_SETTINGS = 8
+TABLECLOTH_DIR = os.path.join(INPUT_DIR, "tablecloths")
+TABLECLOTHS = [
+    {"file": "120 Round - Tan Buffalo Check.jpg", "name": "Tan Buffalo Check"},
+    {"file": "120 Round Damask - Black.png", "name": "Damask Black"},
+    {"file": "120 Round Pintuck Taffeta - Red.jpg", "name": "Pintuck Taffeta Red"},
+    {"file": "120 Round Woven Celery.png", "name": "Woven Celery"},
+]
 
-# === MODEL CONFIG ===
+# =============================================================================
+# MODEL CONFIG (held constant)
+# =============================================================================
+
 MODEL_NAME = "Qwen/Qwen-Image-Edit-2511"
 LORA_REPO = "lightx2v/Qwen-Image-Edit-2511-Lightning"
 LORA_WEIGHTS = "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
 
-# CFG settings
-TRUE_CFG_SCALE = 1.0
-GUIDANCE_SCALE = 1.0
+FIXED_WIDTH = 1024
+FIXED_HEIGHT = 1024
+REF_SIZE = 384
+GUIDANCE_SCALE = 1.0  # placeholder, no effect
 SEED = 42
 
 # =============================================================================
-# PIPELINE STEPS - OFFICIAL QWEN PROMPT STYLE
-# =============================================================================
-# 
-# Qwen's official prompt pattern:
-#   "The [subject] in image 1 [action] from image 2."
-#   "Replace [X] in image 1 with [Y] from image 2."
-#
-# Keep it simple, direct, reference images explicitly.
+# EXPERIMENT GRID DEFINITION
 # =============================================================================
 
-PIPELINE_STEPS = [
-    {
-        "name": "chairs",
-        "steps": 4,
-        "ref_image": "chairs/clear_chiavari.png",
-        "prompt": f"Replace all chairs in image 1 with the gold chiavari chairs from image 2. Place 8 chairs evenly around the round table.",
-    },
-    {
-        "name": "tablecloth",
-        "steps": 4,
-        "ref_image": "tablecloths/satin_red.png",
-        "prompt": f"Replace the tablecloth in image 1 with the red satin tablecloth from image 2. Keep the 8 gold chiavari chairs around the table.",
-    },
-    {
-        "name": "plates",
-        "steps": 4,
-        "ref_image": "plates/white_with_gold_rim.png",
-        "prompt": f"Add {NUM_SETTINGS} dinner plates from image 2 to the table in image 1. One plate at each place setting on the red tablecloth.",
-    },
-    {
-        "name": "napkins",
-        "steps": 4,
-        "ref_image": "napkins/satin_pink.png",
-        "prompt": f"Add the pink napkin from image 2 to each plate in image 1. 8 napkins folded on the plates.",
-    },
-    {
-        "name": "cutlery",
-        "steps": 4,
-        "ref_image": "cutlery/gold_luxe.png",
-        "prompt": f"Add the gold cutlery from image 2 beside each plate in image 1. Fork on left, knife and spoon on right. 8 place settings.",
-    },
-    {
-        "name": "glassware",
-        "steps": 4,
-        "ref_image": "glassware/crystal_wine_glass.png",
-        "prompt": f"Add the crystal wine glass from image 2 to each place setting in image 1. 8 glasses positioned above the knives.",
-    },
-    {
-        "name": "centerpiece",
-        "steps": 4,
-        "ref_image": "centerpieces/pink_flowral_with_gold_stand.png",
-        "prompt": "Add the pink rose centerpiece from image 2 to the center of the table in image 1. Keep all place settings around it.",
-    },
-]
+TRUE_CFG_SCALES = [1.0, 2.0, 3.5, 5.0]
+NUM_INFERENCE_STEPS = [4, 8]
+
+NEGATIVE_PROMPTS = {
+    "minimal": " ",
+    "targeted": (
+        "wrinkles, creases, folds, changed furniture, altered background, "
+        "distortion, blurry"
+    ),
+}
+
+PROMPT_STYLES = {
+    "minimal": lambda name: (
+        "Replace the tablecloth in image 1 with the tablecloth from image 2."
+    ),
+    "detailed": lambda name: (
+        f"Replace the tablecloth in image 1 with the {name} tablecloth from "
+        f"image 2. Match the exact color, texture, and pattern. Keep "
+        f"everything else unchanged."
+    ),
+}
+
+# Total: 4 x 2 x 2 x 2 = 32 experiments
+
+
+def build_experiment_grid():
+    """Generate all hyperparameter combinations using itertools.product."""
+    grid = []
+    for exp_idx, (cfg, steps, neg_key, prompt_key) in enumerate(
+        itertools.product(
+            TRUE_CFG_SCALES,
+            NUM_INFERENCE_STEPS,
+            sorted(NEGATIVE_PROMPTS.keys()),
+            sorted(PROMPT_STYLES.keys()),
+        ),
+        start=1,
+    ):
+        grid.append({
+            "experiment_num": exp_idx,
+            "true_cfg_scale": cfg,
+            "num_inference_steps": steps,
+            "negative_prompt_key": neg_key,
+            "negative_prompt": NEGATIVE_PROMPTS[neg_key],
+            "prompt_style_key": prompt_key,
+            "prompt_fn": PROMPT_STYLES[prompt_key],
+        })
+    return grid
+
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -122,16 +135,24 @@ def resize_reference(img, size=REF_SIZE):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def experiment_label(exp):
+    """Short human-readable label for an experiment."""
+    return (
+        f"cfg={exp['true_cfg_scale']}_steps={exp['num_inference_steps']}_"
+        f"neg={exp['negative_prompt_key']}_prompt={exp['prompt_style_key']}"
+    )
+
+
 # =============================================================================
 # MODEL LOADING
 # =============================================================================
 
 def load_pipeline():
-    print_banner("LOADING MODEL: Qwen-Image-Edit-2511")
-    
+    print_banner("LOADING MODEL: Qwen-Image-Edit-2511 + Lightning LoRA")
+
     gc.collect()
     torch.cuda.empty_cache()
-    
+
     scheduler_config = {
         "base_image_seq_len": 256,
         "base_shift": math.log(3),
@@ -149,65 +170,24 @@ def load_pipeline():
         "use_karras_sigmas": False,
     }
     scheduler = FlowMatchEulerDiscreteScheduler.from_config(scheduler_config)
-    
-    print(f"📦 Loading {MODEL_NAME}...")
+
+    print(f"Loading {MODEL_NAME}...")
     load_start = time.time()
-    
+
     pipeline = QwenImageEditPlusPipeline.from_pretrained(
         MODEL_NAME,
         scheduler=scheduler,
         torch_dtype=torch.bfloat16,
     ).to("cuda")
-    
-    print(f"✅ Base model loaded in {time.time() - load_start:.1f}s")
-    
-    print(f"⚡ Loading 4-step Lightning LoRA...")
-    pipeline.load_lora_weights(
-        LORA_REPO,
-        weight_name=LORA_WEIGHTS
-    )
-    print("✅ LoRA loaded")
-    
+
+    print(f"Base model loaded in {time.time() - load_start:.1f}s")
+
+    print("Loading 4-step Lightning LoRA...")
+    pipeline.load_lora_weights(LORA_REPO, weight_name=LORA_WEIGHTS)
+    print("LoRA loaded")
+
     pipeline.set_progress_bar_config(disable=True)
-    
     return pipeline
-
-
-# =============================================================================
-# EDIT FUNCTION
-# =============================================================================
-
-def run_edit(pipeline, base_img, ref_img, step_config, step_num):
-    steps = step_config['steps']
-    name = step_config['name']
-    prompt = step_config['prompt']
-    
-    print(f"\n🎨 Step {step_num}: {name} ({steps} steps)")
-    print(f"   Prompt: {prompt}")
-    
-    torch.cuda.synchronize()
-    start_time = time.time()
-    
-    with torch.inference_mode():
-        output = pipeline(
-            image=[base_img, ref_img],
-            prompt=prompt,
-            negative_prompt=" ",
-            num_inference_steps=steps,
-            true_cfg_scale=TRUE_CFG_SCALE,
-            guidance_scale=GUIDANCE_SCALE,
-            generator=torch.Generator("cuda").manual_seed(SEED + step_num),
-        )
-    
-    torch.cuda.synchronize()
-    elapsed = time.time() - start_time
-    
-    result = output.images[0]
-    if result.size != (FIXED_WIDTH, FIXED_HEIGHT):
-        result = resize_to_fixed(result)
-    
-    print(f"   ⏱️  {elapsed:.2f}s")
-    return result, elapsed
 
 
 # =============================================================================
@@ -215,10 +195,10 @@ def run_edit(pipeline, base_img, ref_img, step_config, step_num):
 # =============================================================================
 
 def warmup(pipeline):
-    print("\n🔥 Warmup...")
-    dummy = Image.new('RGB', (FIXED_WIDTH, FIXED_HEIGHT), 'white')
-    dummy_ref = Image.new('RGB', (REF_SIZE, REF_SIZE), 'gray')
-    
+    print("\nWarmup run...")
+    dummy = Image.new("RGB", (FIXED_WIDTH, FIXED_HEIGHT), "white")
+    dummy_ref = Image.new("RGB", (REF_SIZE, REF_SIZE), "gray")
+
     with torch.inference_mode():
         _ = pipeline(
             image=[dummy, dummy_ref],
@@ -227,102 +207,350 @@ def warmup(pipeline):
             true_cfg_scale=1.0,
             guidance_scale=1.0,
         )
-    
+
     gc.collect()
     torch.cuda.empty_cache()
-    print("✅ Ready")
+    print("Warmup complete\n")
+
+
+# =============================================================================
+# SINGLE-IMAGE EDIT
+# =============================================================================
+
+def run_edit(pipeline, base_img, ref_img, prompt, exp):
+    """Run a single tablecloth swap and return (result_image, elapsed_seconds)."""
+    torch.cuda.synchronize()
+    start_time = time.time()
+
+    with torch.inference_mode():
+        output = pipeline(
+            image=[base_img, ref_img],
+            prompt=prompt,
+            negative_prompt=exp["negative_prompt"],
+            num_inference_steps=exp["num_inference_steps"],
+            true_cfg_scale=exp["true_cfg_scale"],
+            guidance_scale=GUIDANCE_SCALE,
+            generator=torch.Generator("cuda").manual_seed(SEED),
+        )
+
+    torch.cuda.synchronize()
+    elapsed = time.time() - start_time
+
+    result = output.images[0]
+    if result.size != (FIXED_WIDTH, FIXED_HEIGHT):
+        result = resize_to_fixed(result)
+
+    return result, elapsed
+
+
+# =============================================================================
+# EXPERIMENT RUNNER
+# =============================================================================
+
+def run_experiment(pipeline, exp, base_img, ref_images, output_dir):
+    """Run one experiment across all 4 tablecloths and save outputs."""
+    exp_num = exp["experiment_num"]
+    exp_dir = os.path.join(output_dir, f"experiment_{exp_num:02d}")
+    os.makedirs(exp_dir, exist_ok=True)
+
+    label = experiment_label(exp)
+    print_banner(f"EXPERIMENT {exp_num:02d}/32: {label}")
+
+    image_times = []
+    prompts_used = []
+    exp_start = time.time()
+
+    for tc_idx, tablecloth in enumerate(TABLECLOTHS, start=1):
+        tc_name = tablecloth["name"]
+        prompt = exp["prompt_fn"](tc_name)
+        prompts_used.append(prompt)
+
+        print(f"  [{tc_idx}/4] {tc_name}")
+        print(f"         prompt: {prompt}")
+        print(f"         neg:    {exp['negative_prompt_key']}")
+
+        result, elapsed = run_edit(pipeline, base_img, ref_images[tc_idx - 1], prompt, exp)
+
+        out_path = os.path.join(exp_dir, f"tablecloth_{tc_idx}.png")
+        result.save(out_path)
+        image_times.append({"name": tc_name, "time": elapsed})
+        print(f"         time:   {elapsed:.2f}s  ->  {out_path}")
+
+    total_time = time.time() - exp_start
+
+    # Write per-experiment report
+    write_experiment_report(exp, exp_dir, prompts_used, image_times, total_time)
+
+    return {
+        "experiment_num": exp_num,
+        "label": label,
+        "image_times": image_times,
+        "total_time": total_time,
+        "params": {
+            "true_cfg_scale": exp["true_cfg_scale"],
+            "num_inference_steps": exp["num_inference_steps"],
+            "negative_prompt_key": exp["negative_prompt_key"],
+            "prompt_style_key": exp["prompt_style_key"],
+        },
+    }
+
+
+def write_experiment_report(exp, exp_dir, prompts_used, image_times, total_time):
+    """Write report.txt for a single experiment."""
+    report_path = os.path.join(exp_dir, "report.txt")
+    with open(report_path, "w") as f:
+        f.write(f"Experiment {exp['experiment_num']:02d}\n")
+        f.write("=" * 60 + "\n\n")
+        f.write(f"Date:               {datetime.now()}\n")
+        f.write(f"Model:              {MODEL_NAME}\n")
+        f.write(f"LoRA:               {LORA_WEIGHTS}\n\n")
+
+        f.write("HYPERPARAMETERS\n")
+        f.write("-" * 60 + "\n")
+        f.write(f"true_cfg_scale:     {exp['true_cfg_scale']}\n")
+        f.write(f"num_inference_steps:{exp['num_inference_steps']}\n")
+        f.write(f"guidance_scale:     {GUIDANCE_SCALE} (placeholder)\n")
+        f.write(f"seed:               {SEED}\n")
+        f.write(f"resolution:         {FIXED_WIDTH}x{FIXED_HEIGHT} (main), "
+                f"{REF_SIZE}x{REF_SIZE} (ref)\n")
+        f.write(f"negative_prompt:    [{exp['negative_prompt_key']}] "
+                f"{exp['negative_prompt']}\n")
+        f.write(f"prompt_style:       {exp['prompt_style_key']}\n\n")
+
+        f.write("PROMPTS USED\n")
+        f.write("-" * 60 + "\n")
+        for i, (tc, prompt) in enumerate(zip(TABLECLOTHS, prompts_used), 1):
+            f.write(f"  tablecloth_{i} ({tc['name']}):\n")
+            f.write(f"    {prompt}\n\n")
+
+        f.write("TIMING\n")
+        f.write("-" * 60 + "\n")
+        for i, t in enumerate(image_times, 1):
+            f.write(f"  tablecloth_{i} ({t['name']}): {t['time']:.2f}s\n")
+        inference_total = sum(t["time"] for t in image_times)
+        f.write(f"\n  Inference total:  {inference_total:.2f}s\n")
+        f.write(f"  Wall-clock total: {total_time:.2f}s\n")
+
+    print(f"  Report saved: {report_path}")
+
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+def write_summary(results, output_dir):
+    """Write top-level summary.txt comparing all experiments."""
+    summary_path = os.path.join(output_dir, "summary.txt")
+
+    # Column widths
+    hdr = (
+        f"{'Exp':>4}  {'CFG':>5}  {'Steps':>5}  {'Neg Prompt':>12}  "
+        f"{'Prompt Style':>14}  {'Img1':>6}  {'Img2':>6}  {'Img3':>6}  "
+        f"{'Img4':>6}  {'Total':>7}"
+    )
+    sep = "-" * len(hdr)
+
+    with open(summary_path, "w") as f:
+        f.write("Tablecloth Experiment Grid - Summary\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Date:  {datetime.now()}\n")
+        f.write(f"Model: {MODEL_NAME}\n")
+        f.write(f"LoRA:  {LORA_WEIGHTS}\n")
+        f.write(f"Seed:  {SEED}\n\n")
+
+        f.write("Tablecloths tested:\n")
+        for i, tc in enumerate(TABLECLOTHS, 1):
+            f.write(f"  {i}. {tc['name']} ({tc['file']})\n")
+        f.write("\n")
+
+        f.write(hdr + "\n")
+        f.write(sep + "\n")
+
+        for r in sorted(results, key=lambda x: x["experiment_num"]):
+            times = r["image_times"]
+            img_strs = [f"{t['time']:6.2f}" for t in times]
+            # pad if fewer than 4
+            while len(img_strs) < 4:
+                img_strs.append(f"{'N/A':>6}")
+            line = (
+                f"{r['experiment_num']:4d}  "
+                f"{r['params']['true_cfg_scale']:5.1f}  "
+                f"{r['params']['num_inference_steps']:5d}  "
+                f"{r['params']['negative_prompt_key']:>12}  "
+                f"{r['params']['prompt_style_key']:>14}  "
+                f"{img_strs[0]}  {img_strs[1]}  {img_strs[2]}  {img_strs[3]}  "
+                f"{r['total_time']:7.2f}"
+            )
+            f.write(line + "\n")
+
+        f.write(sep + "\n")
+
+        total_runtime = sum(r["total_time"] for r in results)
+        f.write(f"\nTotal runtime across all experiments: {total_runtime:.2f}s "
+                f"({total_runtime / 60:.1f} min)\n")
+
+    print_banner(f"SUMMARY SAVED: {summary_path}")
+
+
+# =============================================================================
+# DRY RUN
+# =============================================================================
+
+def print_dry_run(grid):
+    """Print the full experiment grid without running anything."""
+    print_banner("DRY RUN - Experiment Grid")
+    print(f"Total experiments: {len(grid)}")
+    print(f"Images per experiment: {len(TABLECLOTHS)}")
+    print(f"Total images: {len(grid) * len(TABLECLOTHS)}\n")
+
+    hdr = f"{'Exp':>4}  {'CFG':>5}  {'Steps':>5}  {'Neg Prompt':>12}  {'Prompt Style':>14}"
+    print(hdr)
+    print("-" * len(hdr))
+
+    for exp in grid:
+        print(
+            f"{exp['experiment_num']:4d}  "
+            f"{exp['true_cfg_scale']:5.1f}  "
+            f"{exp['num_inference_steps']:5d}  "
+            f"{exp['negative_prompt_key']:>12}  "
+            f"{exp['prompt_style_key']:>14}"
+        )
+
+    print(f"\nTablecloths:")
+    for i, tc in enumerate(TABLECLOTHS, 1):
+        print(f"  {i}. {tc['name']} ({tc['file']})")
+
+    print(f"\nNegative prompts:")
+    for key, val in sorted(NEGATIVE_PROMPTS.items()):
+        print(f"  {key}: \"{val}\"")
+
+    print(f"\nPrompt styles (example with '{TABLECLOTHS[0]['name']}'):")
+    for key, fn in sorted(PROMPT_STYLES.items()):
+        print(f"  {key}: \"{fn(TABLECLOTHS[0]['name'])}\"")
+
+
+# =============================================================================
+# CLI
+# =============================================================================
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Tablecloth experiment grid runner (Qwen-Image-Edit-2511 + Lightning)"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the experiment grid without running any inference.",
+    )
+    parser.add_argument(
+        "--experiment",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Run only experiment N (1-32).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help=f"Custom output directory (default: {DEFAULT_OUTPUT_DIR}).",
+    )
+    return parser.parse_args()
 
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
-def run_pipeline(pipeline):
-    print_banner(f"V12C: {NUM_SETTINGS} SETTINGS @ {FIXED_WIDTH}x{FIXED_HEIGHT}", "🎨")
-    
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    total_steps = sum(s['steps'] for s in PIPELINE_STEPS)
-    
-    print(f"📋 Layers: {len(PIPELINE_STEPS)}")
-    print(f"📊 Steps: {total_steps}")
-    print(f"📐 Size: {FIXED_WIDTH}x{FIXED_HEIGHT} / ref: {REF_SIZE}x{REF_SIZE}")
-    print(f"🪑 Settings: {NUM_SETTINGS}")
-    
-    # Load base
-    base_path = os.path.join(INPUT_DIR, BASE_IMAGE)
-    if not os.path.exists(base_path):
-        print(f"❌ Missing: {base_path}")
+def main():
+    args = parse_args()
+    output_dir = args.output_dir if args.output_dir else DEFAULT_OUTPUT_DIR
+
+    grid = build_experiment_grid()
+
+    # --dry-run: print grid and exit
+    if args.dry_run:
+        print_dry_run(grid)
         return
-    
-    current_image = resize_to_fixed(Image.open(base_path).convert("RGB"))
-    current_image.save(os.path.join(OUTPUT_DIR, "step_0_original.png"))
-    print(f"\n💾 Original saved")
-    
+
+    # --experiment N: filter to single experiment
+    if args.experiment is not None:
+        matches = [e for e in grid if e["experiment_num"] == args.experiment]
+        if not matches:
+            print(f"Error: experiment {args.experiment} not found (valid: 1-{len(grid)})")
+            sys.exit(1)
+        grid = matches
+
+    # Validate inputs
+    if not os.path.exists(BASE_IMAGE):
+        print(f"Error: base image not found: {BASE_IMAGE}")
+        sys.exit(1)
+
+    for tc in TABLECLOTHS:
+        tc_path = os.path.join(TABLECLOTH_DIR, tc["file"])
+        if not os.path.exists(tc_path):
+            print(f"Error: tablecloth not found: {tc_path}")
+            sys.exit(1)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Print run info
+    print_banner("TABLECLOTH EXPERIMENT GRID")
+    print(f"Date:            {datetime.now()}")
+    print(f"Model:           {MODEL_NAME}")
+    print(f"LoRA:            {LORA_WEIGHTS}")
+    print(f"Base image:      {BASE_IMAGE}")
+    print(f"Output dir:      {output_dir}")
+    print(f"Resolution:      {FIXED_WIDTH}x{FIXED_HEIGHT} (main), {REF_SIZE}x{REF_SIZE} (ref)")
+    print(f"Seed:            {SEED}")
+    print(f"Experiments:     {len(grid)}")
+    print(f"Images/exp:      {len(TABLECLOTHS)}")
+    print(f"Total images:    {len(grid) * len(TABLECLOTHS)}")
+    if torch.cuda.is_available():
+        print(f"GPU:             {torch.cuda.get_device_name(0)}")
+    print()
+
+    # Load base and reference images
+    print("Loading images...")
+    base_img = resize_to_fixed(Image.open(BASE_IMAGE).convert("RGB"))
+    ref_images = []
+    for tc in TABLECLOTHS:
+        tc_path = os.path.join(TABLECLOTH_DIR, tc["file"])
+        ref_images.append(resize_reference(Image.open(tc_path).convert("RGB")))
+    print(f"  Base image loaded: {BASE_IMAGE}")
+    print(f"  {len(ref_images)} reference tablecloths loaded")
+
+    # Load model (once)
+    pipeline = load_pipeline()
+
+    # Warmup (once)
     warmup(pipeline)
-    
-    # Run
-    step_times = []
-    pipeline_start = time.time()
-    
-    for i, step in enumerate(PIPELINE_STEPS, 1):
-        ref_path = os.path.join(INPUT_DIR, step["ref_image"])
-        if not os.path.exists(ref_path):
-            print(f"⚠️  Missing: {step['ref_image']}")
-            continue
-        
-        ref_img = resize_reference(Image.open(ref_path).convert("RGB"))
-        result, elapsed = run_edit(pipeline, current_image, ref_img, step, i)
-        
-        output_path = os.path.join(OUTPUT_DIR, f"step_{i}_{step['name']}.png")
-        result.save(output_path)
-        print(f"   💾 {output_path}")
-        
-        step_times.append({"name": step["name"], "steps": step["steps"], "time": elapsed})
-        current_image = result
-    
-    # Final
-    total_time = time.time() - pipeline_start
-    final_path = os.path.join(OUTPUT_DIR, "FINAL_RESULT.png")
-    current_image.save(final_path)
-    
-    # Summary
-    print_banner("COMPLETE", "✅")
-    print(f"{'Layer':<12} {'Steps':<6} {'Time'}")
-    print("-" * 30)
-    for s in step_times:
-        print(f"{s['name']:<12} {s['steps']:<6} {s['time']:.2f}s")
-    print("-" * 30)
-    
-    inference_total = sum(s['time'] for s in step_times)
-    print(f"Inference: {inference_total:.2f}s")
-    print(f"Total:     {total_time:.2f}s")
-    print(f"\n🏁 {final_path}")
-    
-    # Report
-    with open(os.path.join(OUTPUT_DIR, "report.txt"), "w") as f:
-        f.write(f"V12C - {NUM_SETTINGS} Place Settings @ {FIXED_WIDTH}x{FIXED_HEIGHT}\n")
-        f.write("=" * 50 + "\n\n")
-        f.write(f"Date: {datetime.now()}\n")
-        f.write(f"Model: {MODEL_NAME}\n")
-        f.write(f"LoRA: {LORA_WEIGHTS}\n\n")
-        f.write("PROMPTS (Qwen official style):\n")
-        f.write("-" * 50 + "\n")
-        for i, s in enumerate(PIPELINE_STEPS, 1):
-            f.write(f"{i}. {s['name']}: {s['prompt']}\n\n")
-        f.write("-" * 50 + "\n\n")
-        f.write("TIMING:\n")
-        for i, s in enumerate(step_times, 1):
-            f.write(f"{i}. {s['name']}: {s['steps']} steps, {s['time']:.2f}s\n")
-        f.write(f"\nTotal inference: {inference_total:.2f}s\n")
-        f.write(f"Total wall time: {total_time:.2f}s\n")
+
+    # Run experiments
+    all_results = []
+    run_start = time.time()
+
+    for i, exp in enumerate(grid, 1):
+        print(f"\n>>> Running experiment {i}/{len(grid)} <<<")
+        result = run_experiment(pipeline, exp, base_img, ref_images, output_dir)
+        all_results.append(result)
+
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    total_runtime = time.time() - run_start
+
+    # Write summary
+    write_summary(all_results, output_dir)
+
+    # Final stats
+    print_banner("ALL EXPERIMENTS COMPLETE")
+    print(f"Experiments run:  {len(all_results)}")
+    print(f"Images generated: {sum(len(r['image_times']) for r in all_results)}")
+    print(f"Total runtime:    {total_runtime:.2f}s ({total_runtime / 60:.1f} min)")
+    print(f"Output dir:       {output_dir}")
+    print()
 
 
 if __name__ == "__main__":
-    print(f"🚀 V12C @ {datetime.now().strftime('%H:%M:%S')}")
-    print(f"🖥️  {torch.cuda.get_device_name(0)}")
-    
-    pipeline = load_pipeline()
-    run_pipeline(pipeline)
-    
-    print(f"\n✨ Done @ {datetime.now().strftime('%H:%M:%S')}")
+    main()
