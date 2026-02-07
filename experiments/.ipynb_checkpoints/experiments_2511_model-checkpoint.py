@@ -67,8 +67,8 @@ SEED = 42
 # EXPERIMENT GRID DEFINITION
 # =============================================================================
 
-TRUE_CFG_SCALES = [1.0, 2.0, 3.0, 5.0]
-NUM_INFERENCE_STEPS = [4, 6]
+TRUE_CFG_SCALES = [1.0, 1.5, 2.0, 2.5]
+NUM_INFERENCE_STEPS = [4, 8]
 
 NEGATIVE_PROMPTS = {
     "minimal": " ",
@@ -81,7 +81,7 @@ NEGATIVE_PROMPTS = {
 
 PROMPT_STYLES = {
     "minimal": lambda name: (
-        "Replace the tablecloth in image 1 with the tablecloth from image 2."
+        "Replace the tablecloth in image 1 with the tablecloth from image 2. The tablecloth should be uniform, lay flat with no creases."
     ),
     "detailed": lambda name: (
         f"Replace the tablecloth in image 1 with the {name} tablecloth from "

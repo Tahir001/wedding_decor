@@ -1,0 +1,40 @@
+Experiment 22
+============================================================
+
+Date:               2026-02-07 21:30:15.429527
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     2.0
+num_inference_steps:8
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+negative_prompt:    [minimal]  
+prompt_style:       minimal
+
+PROMPTS USED
+------------------------------------------------------------
+  tablecloth_1 (Tan Buffalo Check):
+    Replace the tablecloth in image 1 with the tablecloth from image 2. The tablecloth should be uniform, lay flat with no creases.
+
+  tablecloth_2 (Damask Black):
+    Replace the tablecloth in image 1 with the tablecloth from image 2. The tablecloth should be uniform, lay flat with no creases.
+
+  tablecloth_3 (Pintuck Taffeta Red):
+    Replace the tablecloth in image 1 with the tablecloth from image 2. The tablecloth should be uniform, lay flat with no creases.
+
+  tablecloth_4 (Woven Celery):
+    Replace the tablecloth in image 1 with the tablecloth from image 2. The tablecloth should be uniform, lay flat with no creases.
+
+TIMING
+------------------------------------------------------------
+  tablecloth_1 (Tan Buffalo Check): 21.67s
+  tablecloth_2 (Damask Black): 21.67s
+  tablecloth_3 (Pintuck Taffeta Red): 21.68s
+  tablecloth_4 (Woven Celery): 21.74s
+
+  Inference total:  86.76s
+  Wall-clock total: 87.94s
