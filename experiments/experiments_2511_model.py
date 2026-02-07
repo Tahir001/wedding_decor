@@ -59,7 +59,7 @@ LORA_WEIGHTS = "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
 
 FIXED_WIDTH = 1024
 FIXED_HEIGHT = 1024
-REF_SIZE = 384
+REF_SIZE = 512
 GUIDANCE_SCALE = 1.0  # placeholder, no effect
 SEED = 42
 
@@ -73,8 +73,9 @@ NUM_INFERENCE_STEPS = [4, 8]
 NEGATIVE_PROMPTS = {
     "minimal": " ",
     "targeted": (
-        "wrinkles, creases, folds, changed furniture, altered background, "
-        "distortion, blurry"
+        "wrinkles, creases, folds, shadows, dark spots, uneven color, "
+        "uneven lighting, lighting artifacts, changed furniture, "
+        "altered background, distortion, blurry"
     ),
 }
 
@@ -84,8 +85,9 @@ PROMPT_STYLES = {
     ),
     "detailed": lambda name: (
         f"Replace the tablecloth in image 1 with the {name} tablecloth from "
-        f"image 2. Match the exact color, texture, and pattern. Keep "
-        f"everything else unchanged."
+        f"image 2. Match the exact color, texture, and pattern. Apply the "
+        f"color uniformly across the entire tablecloth with even lighting "
+        f"and no dark spots. Keep everything else unchanged."
     ),
 }
 
