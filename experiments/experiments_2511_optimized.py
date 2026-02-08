@@ -34,7 +34,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_6")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_10")
 
 # Base images
 BASE_IMAGES = {
