@@ -101,7 +101,7 @@ SEED = 42
 # =============================================================================
 
 TRUE_CFG_SCALES = [1.5, 2.0, 3.0]
-TRUE_CFG_SCALE = [1.5,2.0, 2.5]
+TRUE_CFG_SCALE = [1.5,2.0, 3.0]
 STEP_COUNTS = [4, 8, 12]
 
 # Negative prompts are non-functional in Qwen-Image-Edit-2511 (flow-matching
