@@ -34,7 +34,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_6")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_10")
 
 # Base images
 BASE_IMAGES = {
@@ -273,7 +273,6 @@ def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps,
             prompt=prompt,
             negative_prompt=negative_prompt,
             num_inference_steps=num_steps,
-            true_cfg_scale=true_cfg_scale,
             true_cfg_scale=true_cfg_scale,
             guidance_scale=GUIDANCE_SCALE,
             generator=torch.Generator("cuda").manual_seed(SEED),
