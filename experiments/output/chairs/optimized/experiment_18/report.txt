@@ -1,0 +1,34 @@
+Experiment 18
+============================================================
+
+Date:               2026-02-08 17:42:47.913233
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+CHAIR
+------------------------------------------------------------
+name:               Walnut Folding Chair
+filename:           Walnut Folding Chair.jpg
+color:              walnut
+material:           wood folding
+cushion:            none
+description:        walnut wood folding chair with a dark brown finish
+
+PROMPT
+------------------------------------------------------------
+style:              detailed
+text:               Replace every chair around the round table in image 1 with the chair shown in image 2. Use the exact chair design, color, and materials from image 2. Place one identical chair at each seating position around the table, maintaining the same circular arrangement and spacing. Each chair faces the table naturally. The chairs look like real furniture with authentic materials and proportions, matching the perspective and lighting of the scene. The round table, brown damask tablecloth, ivory table runner, and the white background all remain exactly as they appear in image 1. Photorealistic, professional event photography quality.
+negative:           ' '
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     1.0
+num_inference_steps:12
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 512x512 (ref)
+
+TIMING
+------------------------------------------------------------
+inference_time:     18.06s
+output:             /workspace/wedding_decor/experiments/output/chairs/optimized/experiment_18/chair_walnut_folding_chair.png

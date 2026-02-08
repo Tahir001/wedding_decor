@@ -38,7 +38,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "chairs")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "chairs", "optimized_2")
 
 # Base image: table scene with existing chairs to be replaced
 DEFAULT_BASE_IMAGE = os.path.join(INPUT_DIR, "base_image_tablerunner.png")
@@ -84,9 +84,9 @@ MODEL_NAME = "Qwen/Qwen-Image-Edit-2511"
 LORA_REPO = "lightx2v/Qwen-Image-Edit-2511-Lightning"
 LORA_WEIGHTS = "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
 
-FIXED_WIDTH = 1024
-FIXED_HEIGHT = 1024
-REF_SIZE = 384
+FIXED_WIDTH = 784
+FIXED_HEIGHT = 784
+REF_SIZE = 512
 GUIDANCE_SCALE = 1.0  # placeholder, no effect
 SEED = 42
 
@@ -94,7 +94,7 @@ SEED = 42
 # HYPERPARAMETERS
 # =============================================================================
 
-TRUE_CFG_SCALES = [1.5, 2.0]
+TRUE_CFG_SCALES = [1.0, 1.25]
 STEP_COUNTS = [4, 8, 12]
 
 # Negative prompt: Qwen-Image-Edit-2511 does NOT support negative conditioning
@@ -119,11 +119,11 @@ PROMPT_TEMPLATES = {
     "minimal": (
         "Replace all the chairs in image 1 with the chair shown in image 2. "
         "Place the same style of chair in every seat position around the table. "
-        "The table, tablecloth, table runner, and background stay exactly the same."
+        "The table, tablecloth, table runner, background and everything else stay exactly the same."
     ),
     "detailed": (
         "Replace every chair around the round table in image 1 with the "
-        "{description} shown in image 2. Use the exact chair design, color, "
+        "chair shown in image 2. Use the exact chair design, color, "
         "and materials from image 2. Place one identical chair at each seating "
         "position around the table, maintaining the same circular arrangement "
         "and spacing. Each chair faces the table naturally. The chairs look like "
