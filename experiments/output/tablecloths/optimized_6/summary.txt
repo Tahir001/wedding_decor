@@ -1,0 +1,45 @@
+Optimized Tablecloth Experiments - Summary
+======================================================================
+
+Date:               2026-02-08 04:06:05.106953
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+Seed:               42
+Resolution:         1024x1024 (main), 384x384 (ref)
+true_cfg_scale:     [1.5, 2.2]
+Step counts:        [4, 8]
+
+NEGATIVE PROMPT
+----------------------------------------------------------------------
+  wrinkles, creases, folds, shadows, dark spots, uneven color, uneven lighting, lighting artifacts, changed furniture, altered background, distortion, blurry, plastic, artificial, glossy plastic color, cutlery, plates
+
+TABLECLOTHS TESTED
+----------------------------------------------------------------------
+  1. Tan Buffalo Check
+     file:     120 Round - Tan Buffalo Check.jpg
+     color:    tan
+     material: buffalo check
+     fabric:   default
+  2. Damask Black
+     file:     120 Round Damask - Black.png
+     color:    black
+     material: damask
+     fabric:   damask
+  3. Pintuck Taffeta Red
+     file:     120 Round Pintuck Taffeta - Red.jpg
+     color:    red
+     material: pintuck taffeta
+     fabric:   pintuck
+  4. Woven Celery
+     file:     120 Round Woven Celery.png
+     color:    celery
+     material: woven
+     fabric:   woven
+
+BASE IMAGE ROUTING (Test 2)
+----------------------------------------------------------------------
+  120 Round - Tan Buffalo Check.jpg             -> base_image.png
+  120 Round Damask - Black.png                  -> base_image_damask.png
+  120 Round Pintuck Taffeta - Red.jpg           -> base_image_pintuck.png
+  120 Round Woven Celery.png                    -> base_image_woven.png
+

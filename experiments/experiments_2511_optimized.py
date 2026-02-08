@@ -36,7 +36,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_6")
 
 # Base images
 BASE_IMAGES = {
@@ -102,18 +102,23 @@ SEED = 42
 # EXPERIMENT 15 BASELINE CONFIG
 # =============================================================================
 
-TRUE_CFG_SCALE = 1.5
-STEP_COUNTS = [4, 6, 8]
+TRUE_CFG_SCALES = [1.5, 2.2]
+TRUE_CFG_SCALE = [1.5, 2.2]
+STEP_COUNTS = [4, 8]
 
-# Targeted negative prompt with anti-plastic terms
+# # Targeted negative prompt with anti-plastic terms
+# TARGETED_NEGATIVE_PROMPT = (
+#      "wrinkles, creases, folds, shadows, dark spots, uneven color, "
+#      "uneven lighting, lighting artifacts, changed furniture, "
+#      "altered background, distortion, blurry, " 
+#      "plastic, artificial, glossy plastic, "
+#      "shiny plastic, unrealistic texture"
+# )
+
+
 TARGETED_NEGATIVE_PROMPT = (
-     "wrinkles, creases, folds, shadows, dark spots, uneven color, "
-     "uneven lighting, lighting artifacts, changed furniture, "
-     "altered background, distortion, blurry, " 
-     "plastic, artificial, glossy plastic, "
-     "shiny plastic, unrealistic texture"
+"wrinkles, creases, folds, shadows, dark spots, uneven color, uneven lighting, lighting artifacts, changed furniture, altered background, distortion, blurry, plastic, artificial, glossy plastic color, cutlery, plates"
 )
-
 
 # =============================================================================
 # PROMPT BUILDING
@@ -121,14 +126,14 @@ TARGETED_NEGATIVE_PROMPT = (
 
 def build_prompt(tablecloth):
     """Generate a detailed realism-enhanced prompt for a specific tablecloth."""
+    name = tablecloth["name"] 
     color = tablecloth["color"]
     material = tablecloth["material"]
     return (
-        f"Replace the tablecloth in image 1 with the {color} {material} "
-        f"tablecloth from image 2. The tablecloth should drape naturally "
-        f"over the round table with realistic fabric folds and texture. "
-        f"Maintain the existing chairs and table setting. "
-        f"Photorealistic, real fabric material."
+        f"Replace the tablecloth in image 1 with {name}, {material} tablecloth from "
+        f"image 2. Match the exact color, texture, and pattern. Apply the "
+        f"color uniformly across the entire tablecloth with even lighting "
+        f"no dark spots, looking professional and realistic. Keep everything else unchanged."
     )
 
 
@@ -257,7 +262,7 @@ def warmup(pipeline):
 # SINGLE-IMAGE EDIT
 # =============================================================================
 
-def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps):
+def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps, true_cfg_scale):
     """Run a single tablecloth swap and return (result_image, elapsed_seconds)."""
     torch.cuda.synchronize()
     start_time = time.time()
@@ -268,7 +273,7 @@ def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps):
             prompt=prompt,
             negative_prompt=negative_prompt,
             num_inference_steps=num_steps,
-            true_cfg_scale=TRUE_CFG_SCALE,
+            true_cfg_scale=true_cfg_scale,
             guidance_scale=GUIDANCE_SCALE,
             generator=torch.Generator("cuda").manual_seed(SEED),
         )
@@ -287,23 +292,11 @@ def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps):
 # EXPERIMENT RUNNER
 # =============================================================================
 
-def run_experiment(pipeline, test_name, tablecloths, step_counts, use_fabric_base,
-                   output_dir, ref_images, base_img_default, base_img_cache):
-    """Run a full test across all tablecloths and step counts.
-
-    Args:
-        pipeline:         Loaded diffusion pipeline.
-        test_name:        Name of the test (e.g., "test1_realism").
-        tablecloths:      List of tablecloth dicts.
-        step_counts:      List of step counts to sweep (e.g., [4, 6, 8]).
-        use_fabric_base:  If True, route base image by fabric type; else use default.
-        output_dir:       Root output directory.
-        ref_images:       Dict mapping filename -> PIL reference image.
-        base_img_default: PIL base image (default).
-        base_img_cache:   Dict mapping base image path -> PIL image.
-
-    Returns:
-        List of result dicts, one per (step_count, tablecloth) combination.
+def run_experiment(pipeline, test_name, tablecloths, step_counts, cfg_scales,
+                   use_fabric_base, output_dir, ref_images, base_img_default,
+                   base_img_cache):
+    """Run a full test across all tablecloths, step counts, and CFG scales.
+    ...
     """
     test_dir = os.path.join(output_dir, test_name)
     os.makedirs(test_dir, exist_ok=True)
@@ -313,77 +306,68 @@ def run_experiment(pipeline, test_name, tablecloths, step_counts, use_fabric_bas
     all_results = []
     test_start = time.time()
 
-    for steps in step_counts:
-        step_dir = os.path.join(test_dir, f"steps_{steps}")
-        os.makedirs(step_dir, exist_ok=True)
+    for cfg in cfg_scales:
+        for steps in step_counts:
+            run_label = f"cfg_{cfg}_steps_{steps}"
+            run_dir = os.path.join(test_dir, run_label)
+            os.makedirs(run_dir, exist_ok=True)
 
-        print_banner(f"{test_name} / steps={steps}", char="-")
+            print_banner(f"{test_name} / cfg={cfg} / steps={steps}", char="-")
 
-        step_results = []
-        step_start = time.time()
+            step_results = []
+            step_start = time.time()
 
-        for tc_idx, tc in enumerate(tablecloths, start=1):
-            prompt = build_prompt(tc)
-            slug = slugify(tc["name"])
+            for tc_idx, tc in enumerate(tablecloths, start=1):
+                prompt = build_prompt(tc)
+                slug = slugify(tc["name"])
 
-            # Select base image
-            if use_fabric_base:
-                base_path = get_base_image(tc["filename"])
-                base_img = base_img_cache[base_path]
-                base_label = os.path.basename(base_path)
-            else:
-                base_img = base_img_default
-                base_label = "base_image.png"
+                # Select base image
+                if use_fabric_base:
+                    base_path = get_base_image(tc["filename"])
+                    base_img = base_img_cache[base_path]
+                    base_label = os.path.basename(base_path)
+                else:
+                    base_img = base_img_default
+                    base_label = "base_image.png"
 
-            ref_img = ref_images[tc["filename"]]
+                ref_img = ref_images[tc["filename"]]
 
-            print(f"  [{tc_idx}/{len(tablecloths)}] {tc['name']}")
-            print(f"         steps:  {steps}")
-            print(f"         base:   {base_label}")
-            print(f"         prompt: {prompt}")
-            print(f"         neg:    targeted (anti-plastic)")
+                print(f"  [{tc_idx}/{len(tablecloths)}] {tc['name']}")
+                print(f"         cfg:    {cfg}")
+                print(f"         steps:  {steps}")
+                print(f"         base:   {base_label}")
+                print(f"         prompt: {prompt}")
+                print(f"         neg:    targeted (anti-plastic)")
 
-            result_img, elapsed = run_edit(
-                pipeline, base_img, ref_img, prompt,
-                TARGETED_NEGATIVE_PROMPT, steps
-            )
+                result_img, elapsed = run_edit(
+                    pipeline, base_img, ref_img, prompt,
+                    TARGETED_NEGATIVE_PROMPT, steps, cfg
+                )
 
-            out_path = os.path.join(step_dir, f"tablecloth_{tc_idx}_{slug}.png")
-            result_img.save(out_path)
+                out_path = os.path.join(run_dir, f"tablecloth_{tc_idx}_{slug}.png")
+                result_img.save(out_path)
 
-            result_entry = {
-                "tablecloth": tc["name"],
-                "filename": tc["filename"],
-                "slug": slug,
-                "steps": steps,
-                "prompt": prompt,
-                "base_image": base_label,
-                "output_path": out_path,
-                "time": elapsed,
-            }
-            step_results.append(result_entry)
-            print(f"         time:   {elapsed:.2f}s  ->  {out_path}")
+                result_entry = {
+                    "tablecloth": tc["name"],
+                    "filename": tc["filename"],
+                    "slug": slug,
+                    "cfg": cfg,
+                    "steps": steps,
+                    "prompt": prompt,
+                    "base_image": base_label,
+                    "output_path": out_path,
+                    "time": elapsed,
+                }
+                step_results.append(result_entry)
+                print(f"         time:   {elapsed:.2f}s  ->  {out_path}")
 
-        step_total = time.time() - step_start
-        print(f"\n  Steps={steps} complete: {step_total:.2f}s")
+            step_total = time.time() - step_start
+            print(f"\n  cfg={cfg} / steps={steps} complete: {step_total:.2f}s")
 
-        all_results.extend(step_results)
+            all_results.extend(step_results)
 
-        gc.collect()
-        torch.cuda.empty_cache()
-
-    test_total = time.time() - test_start
-
-    # Write per-test report
-    write_test_report(test_name, test_dir, all_results, test_total, use_fabric_base)
-
-    return {
-        "test_name": test_name,
-        "use_fabric_base": use_fabric_base,
-        "results": all_results,
-        "total_time": test_total,
-    }
-
+            gc.collect()
+            torch.cuda.empty_cache()
 
 # =============================================================================
 # PER-TEST REPORT
@@ -541,7 +525,7 @@ def print_dry_run():
     print_banner("DRY RUN - Optimized Experiment Config")
 
     print(f"Baseline:  Experiment 15 config")
-    print(f"CFG:       {TRUE_CFG_SCALE}")
+    print(f"CFG:       {TRUE_CFG_SCALES}")
     print(f"Steps:     {STEP_COUNTS}")
     print(f"Seed:      {SEED}")
     print(f"Resolution: {FIXED_WIDTH}x{FIXED_HEIGHT} (main), {REF_SIZE}x{REF_SIZE} (ref)")
@@ -729,6 +713,7 @@ def main():
             test_name="test1_realism",
             tablecloths=TABLECLOTHS,
             step_counts=STEP_COUNTS,
+            cfg_scales=TRUE_CFG_SCALES,
             use_fabric_base=False,
             output_dir=output_dir,
             ref_images=ref_images,
@@ -745,6 +730,7 @@ def main():
             test_name="test2_fabric_base",
             tablecloths=TABLECLOTHS,
             step_counts=STEP_COUNTS,
+            cfg_scales=TRUE_CFG_SCALES,
             use_fabric_base=True,
             output_dir=output_dir,
             ref_images=ref_images,

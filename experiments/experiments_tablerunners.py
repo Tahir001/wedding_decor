@@ -48,7 +48,7 @@ DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablerunners")
 # Default base image: a level 1 tablecloth result (Pintuck Red from Experiment 15)
 # Override with --base-image CLI flag
 DEFAULT_BASE_IMAGE = os.path.join(
-    SCRIPT_DIR, "output", "tablecloths", "experiment_15", "tablecloth_3.png"
+    SCRIPT_DIR, "input", "base_image_damask.png"
 )
 
 # Pose reference images (image 3 candidates)
@@ -101,19 +101,19 @@ SEED = 42
 # =============================================================================
 
 TRUE_CFG_SCALE = 1.5
-STEP_COUNTS = [8]
+STEP_COUNTS = [4, 8]
 
 # Pose image sizes to test (3-image configs only)
 POSE_SIZES = [512]
 
 # Targeted negative prompt with anti-plastic + runner-specific terms
+# This is a negative prompt just for TABLE RUNNERs. The one above will have it's own. 
 NEGATIVE_PROMPT = (
-    "wrinkles, creases, folds, shadows, dark spots, uneven color, "
-    "uneven lighting, lighting artifacts, changed furniture, "
+    "wrinkles, creases, folds, shadows, dark spots "
+    "changed furniture, changed tablecloth underneath "
     "altered background, distortion, blurry, "
     "plastic, artificial, glossy plastic, "
-    "shiny plastic, unrealistic texture, "
-    "tablecloth change, wrong placement"
+    "shiny plastic, wrong placement, changed floor"
 )
 
 # =============================================================================
@@ -165,28 +165,26 @@ IMAGE_CONFIGS = [
 PROMPT_TEMPLATES = {
     "minimal": (
         "Add the table runner from image 2 on top of the tablecloth "
-        "in image 1. The runner runs vertically down the center of "
+        "in image 1. The tablecloth underneath remains unchanged. The runner runs vertically down the center of "
         "the round table. Keep everything else the same."
     ),
     "detailed_2img": (
-        "Add the {color} {material} table runner from image 2 onto "
+        "Add the {color} {material} table runner from image 2 on top of the tablecloth, on the "
         "the round table in image 1. The runner should be centered, "
         "running vertically from one edge of the table to the other, "
         "like 12 o'clock to 6 o'clock. It lies flat on top of the "
-        "existing tablecloth and drapes naturally over both edges. "
-        "Do not change the tablecloth color or pattern. "
-        "Do not move the chairs. "
-        "Photorealistic, real fabric texture."
+        "existing tablecloth and drapes naturally over both edges, looking photo realistic. "
+        "Do not change the tablecloth color or pattern underneath."
+        "Do not move the chairs, or change the background."
     ),
     "detailed_3img": (
-        "Add a {color} {material} table runner onto the round table. "
-        "Use the exact fabric pattern and texture from the runner "
-        "swatch. Place the runner centered vertically across the "
+        "Add a {color} {material} table runner onto the round table in image 1."
+        "Use the exact fabric pattern and texture from the image 2. "
+        "Place the runner centered vertically across the "
         "table, running from one edge to the other, draping over "
-        "both sides. Match the runner placement and layout shown "
-        "in the reference. The runner lies flat on the existing "
-        "tablecloth. Do not change the tablecloth. Do not move "
-        "the chairs. Photorealistic, real fabric."
+        "both sides, looking photo-realistic. Match the runner placement and layout shown "
+        "in the reference image 3. The runner lies flat on the existing "
+        "tablecloth. Do not change the tablecloth. Do not move the chairs, or change the background."
     ),
 }
 
