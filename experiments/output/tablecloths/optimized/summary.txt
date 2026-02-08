@@ -1,0 +1,102 @@
+Optimized Tablecloth Experiments - Summary
+======================================================================
+
+Date:               2026-02-08 01:21:01.939097
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+Seed:               42
+Resolution:         1024x1024 (main), 384x384 (ref)
+true_cfg_scale:     1.5
+Step counts:        [4, 6, 8]
+
+NEGATIVE PROMPT
+----------------------------------------------------------------------
+  wrinkles, creases, folds, shadows, dark spots, uneven color, uneven lighting, lighting artifacts, changed furniture, altered background, distortion, blurry, plastic, artificial, glossy plastic, shiny plastic, unrealistic texture
+
+TABLECLOTHS TESTED
+----------------------------------------------------------------------
+  1. Tan Buffalo Check
+     file:     120 Round - Tan Buffalo Check.jpg
+     color:    tan
+     material: buffalo check
+     fabric:   default
+  2. Damask Black
+     file:     120 Round Damask - Black.png
+     color:    black
+     material: damask
+     fabric:   damask
+  3. Pintuck Taffeta Red
+     file:     120 Round Pintuck Taffeta - Red.jpg
+     color:    red
+     material: pintuck taffeta
+     fabric:   pintuck
+  4. Woven Celery
+     file:     120 Round Woven Celery.png
+     color:    celery
+     material: woven
+     fabric:   woven
+
+BASE IMAGE ROUTING (Test 2)
+----------------------------------------------------------------------
+  120 Round - Tan Buffalo Check.jpg             -> base_image.png
+  120 Round Damask - Black.png                  -> base_image_damask.png
+  120 Round Pintuck Taffeta - Red.jpg           -> base_image_pintuck.png
+  120 Round Woven Celery.png                    -> base_image_woven.png
+
+
+======================================================================
+  TEST1_REALISM  (fabric_base=No)
+======================================================================
+
+Steps                 Tablecloth                 Base Image   Time (s)  Output
+------------------------------------------------------------------------------
+    4          Tan Buffalo Check             base_image.png      13.40  test1_realism/steps_4/tablecloth_1_tan_buffalo_check.png
+    4               Damask Black             base_image.png      13.64  test1_realism/steps_4/tablecloth_2_damask_black.png
+    4        Pintuck Taffeta Red             base_image.png      13.89  test1_realism/steps_4/tablecloth_3_pintuck_taffeta_red.png
+    4               Woven Celery             base_image.png      13.72  test1_realism/steps_4/tablecloth_4_woven_celery.png
+    6          Tan Buffalo Check             base_image.png      18.79  test1_realism/steps_6/tablecloth_1_tan_buffalo_check.png
+    6               Damask Black             base_image.png      19.22  test1_realism/steps_6/tablecloth_2_damask_black.png
+    6        Pintuck Taffeta Red             base_image.png      19.07  test1_realism/steps_6/tablecloth_3_pintuck_taffeta_red.png
+    6               Woven Celery             base_image.png      19.08  test1_realism/steps_6/tablecloth_4_woven_celery.png
+    8          Tan Buffalo Check             base_image.png      24.65  test1_realism/steps_8/tablecloth_1_tan_buffalo_check.png
+    8               Damask Black             base_image.png      24.52  test1_realism/steps_8/tablecloth_2_damask_black.png
+    8        Pintuck Taffeta Red             base_image.png      24.18  test1_realism/steps_8/tablecloth_3_pintuck_taffeta_red.png
+    8               Woven Celery             base_image.png      24.39  test1_realism/steps_8/tablecloth_4_woven_celery.png
+
+  Inference total:  228.56s
+  Wall-clock total: 232.83s
+
+======================================================================
+  TEST2_FABRIC_BASE  (fabric_base=Yes)
+======================================================================
+
+Steps                 Tablecloth                 Base Image   Time (s)  Output
+------------------------------------------------------------------------------
+    4          Tan Buffalo Check             base_image.png      13.77  test2_fabric_base/steps_4/tablecloth_1_tan_buffalo_check.png
+    4               Damask Black      base_image_damask.png      13.83  test2_fabric_base/steps_4/tablecloth_2_damask_black.png
+    4        Pintuck Taffeta Red     base_image_pintuck.png      13.80  test2_fabric_base/steps_4/tablecloth_3_pintuck_taffeta_red.png
+    4               Woven Celery       base_image_woven.png      14.00  test2_fabric_base/steps_4/tablecloth_4_woven_celery.png
+    6          Tan Buffalo Check             base_image.png      19.24  test2_fabric_base/steps_6/tablecloth_1_tan_buffalo_check.png
+    6               Damask Black      base_image_damask.png      19.41  test2_fabric_base/steps_6/tablecloth_2_damask_black.png
+    6        Pintuck Taffeta Red     base_image_pintuck.png      19.41  test2_fabric_base/steps_6/tablecloth_3_pintuck_taffeta_red.png
+    6               Woven Celery       base_image_woven.png      19.38  test2_fabric_base/steps_6/tablecloth_4_woven_celery.png
+    8          Tan Buffalo Check             base_image.png      24.54  test2_fabric_base/steps_8/tablecloth_1_tan_buffalo_check.png
+    8               Damask Black      base_image_damask.png      24.32  test2_fabric_base/steps_8/tablecloth_2_damask_black.png
+    8        Pintuck Taffeta Red     base_image_pintuck.png      24.51  test2_fabric_base/steps_8/tablecloth_3_pintuck_taffeta_red.png
+    8               Woven Celery       base_image_woven.png      24.18  test2_fabric_base/steps_8/tablecloth_4_woven_celery.png
+
+  Inference total:  230.38s
+  Wall-clock total: 234.14s
+
+
+======================================================================
+  AGGREGATE TIMING
+======================================================================
+
+  Model load:       307.30s
+  Warmup:           8.79s
+  test1_realism        232.83s
+  test2_fabric_base    234.14s
+
+  Total inference:  458.94s (24 images)
+  Total runtime:    466.99s (7.8 min)

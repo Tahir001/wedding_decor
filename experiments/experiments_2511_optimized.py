@@ -34,7 +34,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablecloths", "optimized_6")
 
 # Base images
 BASE_IMAGES = {
@@ -274,6 +274,7 @@ def run_edit(pipeline, base_img, ref_img, prompt, negative_prompt, num_steps,
             negative_prompt=negative_prompt,
             num_inference_steps=num_steps,
             true_cfg_scale=true_cfg_scale,
+            true_cfg_scale=true_cfg_scale,
             guidance_scale=GUIDANCE_SCALE,
             generator=torch.Generator("cuda").manual_seed(SEED),
         )
@@ -332,7 +333,12 @@ def run_experiment(pipeline, test_name, tablecloths, step_counts, cfg_scales,
 
             step_results = []
             step_start = time.time()
+            step_results = []
+            step_start = time.time()
 
+            for tc_idx, tc in enumerate(tablecloths, start=1):
+                prompt = build_prompt(tc)
+                slug = slugify(tc["name"])
             for tc_idx, tc in enumerate(tablecloths, start=1):
                 prompt = build_prompt(tc)
                 slug = slugify(tc["name"])
@@ -345,7 +351,16 @@ def run_experiment(pipeline, test_name, tablecloths, step_counts, cfg_scales,
                 else:
                     base_img = base_img_default
                     base_label = "base_image.png"
+                # Select base image
+                if use_fabric_base:
+                    base_path = get_base_image(tc["filename"])
+                    base_img = base_img_cache[base_path]
+                    base_label = os.path.basename(base_path)
+                else:
+                    base_img = base_img_default
+                    base_label = "base_image.png"
 
+                ref_img = ref_images[tc["filename"]]
                 ref_img = ref_images[tc["filename"]]
 
                 print(f"  [{tc_idx}/{len(tablecloths)}] {tc['name']}")
@@ -380,22 +395,12 @@ def run_experiment(pipeline, test_name, tablecloths, step_counts, cfg_scales,
             print(f"\n  cfg={cfg_scale} steps={steps} complete: {step_total:.2f}s")
 
             all_results.extend(step_results)
+            all_results.extend(step_results)
 
             gc.collect()
             torch.cuda.empty_cache()
-
-    test_total = time.time() - test_start
-
-    # Write per-test report
-    write_test_report(test_name, test_dir, all_results, test_total, use_fabric_base)
-
-    return {
-        "test_name": test_name,
-        "use_fabric_base": use_fabric_base,
-        "results": all_results,
-        "total_time": test_total,
-    }
-
+            gc.collect()
+            torch.cuda.empty_cache()
 
 # =============================================================================
 # PER-TEST REPORT
@@ -559,6 +564,7 @@ def print_dry_run():
     print_banner("DRY RUN - Optimized Experiment Config")
 
     print(f"Baseline:  Experiment 15 config")
+    print(f"CFG:       {TRUE_CFG_SCALES}")
     print(f"CFG:       {TRUE_CFG_SCALES}")
     print(f"Steps:     {STEP_COUNTS}")
     print(f"Seed:      {SEED}")
@@ -753,6 +759,7 @@ def main():
             tablecloths=TABLECLOTHS,
             step_counts=STEP_COUNTS,
             cfg_scales=TRUE_CFG_SCALES,
+            cfg_scales=TRUE_CFG_SCALES,
             use_fabric_base=False,
             output_dir=output_dir,
             ref_images=ref_images,
@@ -769,6 +776,7 @@ def main():
             test_name="test2_fabric_base",
             tablecloths=TABLECLOTHS,
             step_counts=STEP_COUNTS,
+            cfg_scales=TRUE_CFG_SCALES,
             cfg_scales=TRUE_CFG_SCALES,
             use_fabric_base=True,
             output_dir=output_dir,
