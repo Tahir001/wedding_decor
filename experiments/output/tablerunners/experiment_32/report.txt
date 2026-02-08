@@ -1,0 +1,41 @@
+Experiment 32
+============================================================
+
+Date:               2026-02-08 04:29:01.423627
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+IMAGE CONFIGURATION
+------------------------------------------------------------
+config:             3img_realistic
+description:        3-image with realistic photo pose reference
+num_images:         3
+pose_image:         reference_image_two_tablerunner.png
+pose_size:          512x512
+
+TABLE RUNNER
+------------------------------------------------------------
+name:               Velvet Cashmere
+filename:           Rectangle Velvet - Cashmere.jpeg
+color:              cashmere
+material:           velvet
+
+PROMPT
+------------------------------------------------------------
+style:              minimal
+text:               Add the table runner from image 2 on top of the tablecloth in image 1. The tablecloth underneath remains unchanged. The runner runs vertically down the center of the round table. Keep everything else the same.
+negative:           wrinkles, creases, folds, shadows, dark spots changed furniture, changed tablecloth underneath altered background, distortion, blurry, plastic, artificial, glossy plastic, shiny plastic, wrong placement, changed floor
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     1.5
+num_inference_steps:8
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+pose_resolution:    512x512
+
+TIMING
+------------------------------------------------------------
+inference_time:     33.05s
+output:             /workspace/wedding_decor/experiments/output/tablerunners/experiment_32/runner_velvet_cashmere.png

@@ -1,0 +1,38 @@
+Experiment 06
+============================================================
+
+Date:               2026-02-08 04:18:32.694928
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+IMAGE CONFIGURATION
+------------------------------------------------------------
+config:             2img
+description:        Standard 2-image (base + runner swatch)
+num_images:         2
+
+TABLE RUNNER
+------------------------------------------------------------
+name:               Woven Ivory
+filename:           Rectangle Woven - Ivory.png
+color:              ivory
+material:           woven
+
+PROMPT
+------------------------------------------------------------
+style:              minimal
+text:               Add the table runner from image 2 on top of the tablecloth in image 1. The tablecloth underneath remains unchanged. The runner runs vertically down the center of the round table. Keep everything else the same.
+negative:           wrinkles, creases, folds, shadows, dark spots changed furniture, changed tablecloth underneath altered background, distortion, blurry, plastic, artificial, glossy plastic, shiny plastic, wrong placement, changed floor
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     1.5
+num_inference_steps:8
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+
+TIMING
+------------------------------------------------------------
+inference_time:     22.39s
+output:             /workspace/wedding_decor/experiments/output/tablerunners/experiment_06/runner_woven_ivory.png

@@ -1,0 +1,38 @@
+Experiment 09
+============================================================
+
+Date:               2026-02-08 04:19:23.078773
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+IMAGE CONFIGURATION
+------------------------------------------------------------
+config:             2img
+description:        Standard 2-image (base + runner swatch)
+num_images:         2
+
+TABLE RUNNER
+------------------------------------------------------------
+name:               Velvet Hot Pink
+filename:           Rectangle Velvet - Hot Pink.png
+color:              hot pink
+material:           velvet
+
+PROMPT
+------------------------------------------------------------
+style:              detailed_2img
+text:               Add the hot pink velvet table runner from image 2 on top of the tablecloth, on the the round table in image 1. The runner should be centered, running vertically from one edge of the table to the other, like 12 o'clock to 6 o'clock. It lies flat on top of the existing tablecloth and drapes naturally over both edges, looking photo realistic. Do not change the tablecloth color or pattern underneath.Do not move the chairs, or change the background.
+negative:           wrinkles, creases, folds, shadows, dark spots changed furniture, changed tablecloth underneath altered background, distortion, blurry, plastic, artificial, glossy plastic, shiny plastic, wrong placement, changed floor
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     1.5
+num_inference_steps:4
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+
+TIMING
+------------------------------------------------------------
+inference_time:     13.45s
+output:             /workspace/wedding_decor/experiments/output/tablerunners/experiment_09/runner_velvet_hot_pink.png
