@@ -3,22 +3,23 @@
 WEDDING DECOR - TABLE RUNNER EXPERIMENTS (LEVEL 2)
 ===============================================================================
 Focused experiment runner for table runners, using optimized Level 1
-hyperparameters (cfg=1.5) as the fixed baseline.
+hyperparameters as baseline.
 
 Tests the critical variables for table runner generation:
   1. Image configuration: 2-image vs 3-image (with pose reference)
   2. Prompt style: minimal vs detailed (2img) vs detailed (3img)
   3. Pose reference type: wireframe blueprint vs realistic photo
-  4. Pose image size: 384x384 vs 512x512 (3-image configs only)
+  4. Pose image size (3-image configs only)
   5. Step count: 4 vs 8
+  6. true_cfg_scale: 1.5 vs 2.0
 
-Total: 84 runs
-  - 2img:           2 prompts x 3 runners x 2 steps             = 12
-  - 3img_wireframe: 3 prompts x 3 runners x 2 pose_sizes x 2 steps = 36
-  - 3img_realistic: 3 prompts x 3 runners x 2 pose_sizes x 2 steps = 36
+Total: 96 runs
+  - 2img:           2 cfgs x 2 prompts x 3 runners x 2 steps                  = 24
+  - 3img_wireframe: 2 cfgs x 3 prompts x 3 runners x 1 pose_size x 2 steps   = 36
+  - 3img_realistic: 2 cfgs x 3 prompts x 3 runners x 1 pose_size x 2 steps   = 36
 
 Usage:
-    python experiments_tablerunners.py                    # run all 84 experiments
+    python experiments_tablerunners.py                    # run all 96 experiments
     python experiments_tablerunners.py --dry-run          # print config, don't run
     python experiments_tablerunners.py --test             # sanity test (1 run, 3img)
     python experiments_tablerunners.py --base-image /path/to/tablecloth_result.png
@@ -100,7 +101,7 @@ SEED = 42
 # FIXED HYPERPARAMETERS (from Level 1 optimization)
 # =============================================================================
 
-TRUE_CFG_SCALE = 1.5
+TRUE_CFG_SCALES = [1.5, 2.0]
 STEP_COUNTS = [4, 8]
 
 # Pose image sizes to test (3-image configs only)
@@ -202,38 +203,40 @@ PROMPT_TEMPLATES = {
 def build_experiment_grid():
     """Build the full experiment grid.
 
-    For 2-image configs: prompt_style x runner x step_count (no pose_size).
-    For 3-image configs: prompt_style x runner x pose_size x step_count.
+    For 2-image configs: cfg_scale x prompt_style x runner x step_count.
+    For 3-image configs: cfg_scale x prompt_style x runner x pose_size x step_count.
 
     Returns a list of experiment dicts, one per run.
     """
     experiments = []
     exp_id = 1
 
-    for img_config in IMAGE_CONFIGS:
-        for prompt_key in img_config["valid_prompts"]:
-            for runner in TABLE_RUNNERS:
-                # Format the prompt with runner-specific details
-                prompt_text = PROMPT_TEMPLATES[prompt_key].format(
-                    color=runner["color"],
-                    material=runner["material"],
-                )
+    for cfg_scale in TRUE_CFG_SCALES:
+        for img_config in IMAGE_CONFIGS:
+            for prompt_key in img_config["valid_prompts"]:
+                for runner in TABLE_RUNNERS:
+                    # Format the prompt with runner-specific details
+                    prompt_text = PROMPT_TEMPLATES[prompt_key].format(
+                        color=runner["color"],
+                        material=runner["material"],
+                    )
 
-                # Pose sizes: only sweep for 3-image configs
-                pose_sizes = POSE_SIZES if img_config["use_pose"] else [None]
+                    # Pose sizes: only sweep for 3-image configs
+                    pose_sizes = POSE_SIZES if img_config["use_pose"] else [None]
 
-                for pose_size in pose_sizes:
-                    for num_steps in STEP_COUNTS:
-                        experiments.append({
-                            "id": exp_id,
-                            "image_config": img_config,
-                            "prompt_style": prompt_key,
-                            "runner": runner,
-                            "prompt_text": prompt_text,
-                            "pose_size": pose_size,
-                            "num_steps": num_steps,
-                        })
-                        exp_id += 1
+                    for pose_size in pose_sizes:
+                        for num_steps in STEP_COUNTS:
+                            experiments.append({
+                                "id": exp_id,
+                                "image_config": img_config,
+                                "prompt_style": prompt_key,
+                                "runner": runner,
+                                "prompt_text": prompt_text,
+                                "pose_size": pose_size,
+                                "num_steps": num_steps,
+                                "cfg_scale": cfg_scale,
+                            })
+                            exp_id += 1
 
     return experiments
 
@@ -348,7 +351,7 @@ def warmup(pipeline):
 # SINGLE-IMAGE EDIT
 # =============================================================================
 
-def run_edit(pipeline, image_list, prompt, negative_prompt, num_steps):
+def run_edit(pipeline, image_list, prompt, negative_prompt, num_steps, cfg_scale):
     """Run a single table runner edit and return (result_image, elapsed_seconds).
 
     Args:
@@ -357,6 +360,7 @@ def run_edit(pipeline, image_list, prompt, negative_prompt, num_steps):
         prompt:           Text prompt.
         negative_prompt:  Negative prompt.
         num_steps:        Number of inference steps.
+        cfg_scale:        True CFG scale value.
 
     Returns:
         (result_image, elapsed_seconds)
@@ -370,7 +374,7 @@ def run_edit(pipeline, image_list, prompt, negative_prompt, num_steps):
             prompt=prompt,
             negative_prompt=negative_prompt,
             num_inference_steps=num_steps,
-            true_cfg_scale=TRUE_CFG_SCALE,
+            true_cfg_scale=cfg_scale,
             guidance_scale=GUIDANCE_SCALE,
             generator=torch.Generator("cuda").manual_seed(SEED),
         )
@@ -416,6 +420,7 @@ def run_experiments(pipeline, experiments, base_img, runner_images, pose_images,
         prompt_text = exp["prompt_text"]
         num_steps = exp["num_steps"]
         pose_size = exp["pose_size"]
+        cfg_scale = exp["cfg_scale"]
 
         config_name = img_config["name"]
         runner_name = runner["name"]
@@ -427,10 +432,10 @@ def run_experiments(pipeline, experiments, base_img, runner_images, pose_images,
 
         print(f"\n  [{exp_id:2d}/{len(experiments)}] "
               f"{config_name} / {prompt_style} / {runner_name} / "
-              f"steps={num_steps}"
+              f"cfg={cfg_scale} / steps={num_steps}"
               f"{f' / pose={pose_size}px' if pose_size else ''}")
         print(f"         prompt: {prompt_text}")
-        print(f"         neg:    targeted (anti-plastic + placement)")
+        print(f"         neg:    (disabled, single space)")
 
         # Build image list
         ref_img = runner_images[runner["filename"]]
@@ -444,11 +449,13 @@ def run_experiments(pipeline, experiments, base_img, runner_images, pose_images,
         else:
             print(f"         pose:   (none, 2-image mode)")
 
+        print(f"         cfg:    {cfg_scale}")
         print(f"         steps:  {num_steps}")
 
         # Run inference
         result_img, elapsed = run_edit(
-            pipeline, image_list, prompt_text, NEGATIVE_PROMPT, num_steps
+            pipeline, image_list, prompt_text, NEGATIVE_PROMPT, num_steps,
+            cfg_scale
         )
 
         # Save output image
@@ -469,6 +476,7 @@ def run_experiments(pipeline, experiments, base_img, runner_images, pose_images,
             "runner_filename": runner["filename"],
             "prompt_text": prompt_text,
             "num_steps": num_steps,
+            "cfg_scale": cfg_scale,
             "pose_size": pose_size if pose_size else "n/a",
             "pose_image": (os.path.basename(img_config["pose_path"])
                            if img_config["use_pose"] else "none"),
@@ -494,6 +502,7 @@ def write_experiment_report(report_path, exp, elapsed, out_path):
     runner = exp["runner"]
     num_steps = exp["num_steps"]
     pose_size = exp["pose_size"]
+    cfg_scale = exp["cfg_scale"]
 
     with open(report_path, "w") as f:
         f.write(f"Experiment {exp['id']:02d}\n")
@@ -524,11 +533,11 @@ def write_experiment_report(report_path, exp, elapsed, out_path):
         f.write("-" * 60 + "\n")
         f.write(f"style:              {exp['prompt_style']}\n")
         f.write(f"text:               {exp['prompt_text']}\n")
-        f.write(f"negative:           {NEGATIVE_PROMPT}\n\n")
+        f.write(f"negative:           {NEGATIVE_PROMPT!r}\n\n")
 
         f.write("HYPERPARAMETERS\n")
         f.write("-" * 60 + "\n")
-        f.write(f"true_cfg_scale:     {TRUE_CFG_SCALE}\n")
+        f.write(f"true_cfg_scale:     {cfg_scale}\n")
         f.write(f"num_inference_steps:{num_steps}\n")
         f.write(f"guidance_scale:     {GUIDANCE_SCALE} (placeholder)\n")
         f.write(f"seed:               {SEED}\n")
@@ -562,7 +571,7 @@ def generate_summary(results, output_dir, base_image_path, model_load_time,
         f.write(f"Seed:               {SEED}\n")
         f.write(f"Resolution:         {FIXED_WIDTH}x{FIXED_HEIGHT} (main), "
                 f"{REF_SIZE}x{REF_SIZE} (ref)\n")
-        f.write(f"true_cfg_scale:     {TRUE_CFG_SCALE}\n")
+        f.write(f"true_cfg_scales:    {TRUE_CFG_SCALES}\n")
         f.write(f"step_counts:        {STEP_COUNTS}\n")
         f.write(f"pose_sizes:         {POSE_SIZES}\n")
         f.write(f"Base image:         {base_image_path}\n")
@@ -607,7 +616,7 @@ def generate_summary(results, output_dir, base_image_path, model_load_time,
 
         # Table header
         hdr = (f"{'Exp':>3}  {'Image Config':>18}  {'Prompt Style':>14}  "
-               f"{'Runner':>18}  {'Steps':>5}  {'Pose Size':>9}  "
+               f"{'Runner':>18}  {'CFG':>5}  {'Steps':>5}  {'Pose Size':>9}  "
                f"{'Pose':>20}  {'Time (s)':>9}")
         f.write(hdr + "\n")
         f.write("-" * len(hdr) + "\n")
@@ -620,6 +629,7 @@ def generate_summary(results, output_dir, base_image_path, model_load_time,
                 f"{r['image_config']:>18s}  "
                 f"{r['prompt_style']:>14s}  "
                 f"{r['runner_name']:>18s}  "
+                f"{r['cfg_scale']:5.1f}  "
                 f"{r['num_steps']:5d}  "
                 f"{pose_size_str:>9s}  "
                 f"{r['pose_image']:>20s}  "
@@ -672,7 +682,7 @@ def print_dry_run(base_image_path):
     print_banner("DRY RUN - Table Runner Experiment Config")
 
     print(f"Baseline:    Level 1 optimized config (Experiment 15)")
-    print(f"CFG:         {TRUE_CFG_SCALE}")
+    print(f"CFG:         {TRUE_CFG_SCALES}")
     print(f"Steps:       {STEP_COUNTS}")
     print(f"Pose sizes:  {POSE_SIZES} (3-image configs only)")
     print(f"Seed:        {SEED}")
@@ -716,7 +726,7 @@ def print_dry_run(base_image_path):
                      if exp["pose_size"] else "no_pose")
         print(f"  Exp {exp['id']:2d}: {cfg_name:18s}  "
               f"{exp['prompt_style']:14s}  {exp['runner']['name']:18s}  "
-              f"steps={exp['num_steps']}  {pose_info}")
+              f"cfg={exp['cfg_scale']}  steps={exp['num_steps']}  {pose_info}")
     print()
     print(f"Total experiments: {len(experiments)}")
 
@@ -736,6 +746,7 @@ def run_sanity_test(pipeline, base_img, runner_images, pose_images, output_dir):
     ref_img = runner_images[runner["filename"]]
     test_steps = STEP_COUNTS[-1]  # use highest step count for best quality
     test_pose_size = POSE_SIZES[0]  # 384
+    test_cfg = TRUE_CFG_SCALES[0]  # use first CFG scale
 
     # Test with wireframe pose (3 images)
     pose_img = pose_images[(POSE_WIREFRAME, test_pose_size)]
@@ -745,6 +756,7 @@ def run_sanity_test(pipeline, base_img, runner_images, pose_images, output_dir):
 
     print(f"  Runner:  {runner['name']}")
     print(f"  Config:  3img_wireframe")
+    print(f"  CFG:     {test_cfg}")
     print(f"  Steps:   {test_steps}")
     print(f"  Pose:    {test_pose_size}x{test_pose_size}")
     print(f"  Prompt:  {prompt}")
@@ -752,7 +764,7 @@ def run_sanity_test(pipeline, base_img, runner_images, pose_images, output_dir):
     print()
 
     result_img, elapsed = run_edit(
-        pipeline, image_list, prompt, NEGATIVE_PROMPT, test_steps
+        pipeline, image_list, prompt, NEGATIVE_PROMPT, test_steps, test_cfg
     )
 
     out_path = os.path.join(test_dir, f"sanity_3img_{slugify(runner['name'])}.png")
@@ -860,7 +872,7 @@ def main():
     print(f"Resolution:      {FIXED_WIDTH}x{FIXED_HEIGHT} (main), "
           f"{REF_SIZE}x{REF_SIZE} (ref)")
     print(f"Seed:            {SEED}")
-    print(f"CFG:             {TRUE_CFG_SCALE}")
+    print(f"CFG:             {TRUE_CFG_SCALES}")
     print(f"Step counts:     {STEP_COUNTS}")
     print(f"Pose sizes:      {POSE_SIZES}")
     print(f"Mode:            {'sanity test' if args.test else 'full grid'}")
