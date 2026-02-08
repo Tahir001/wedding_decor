@@ -43,7 +43,7 @@ from diffusers import QwenImageEditPlusPipeline, FlowMatchEulerDiscreteScheduler
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "input")
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablerunners")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output", "tablerunners", "optimized")
 
 # Default base image: a level 1 tablecloth result (Pintuck Red from Experiment 15)
 # Override with --base-image CLI flag
@@ -101,7 +101,7 @@ SEED = 42
 # =============================================================================
 
 TRUE_CFG_SCALE = 1.5
-STEP_COUNTS = [4, 8]
+STEP_COUNTS = [4, 8, 12]
 
 # Pose image sizes to test (3-image configs only)
 POSE_SIZES = [512]
