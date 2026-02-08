@@ -1,0 +1,219 @@
+Table Runner Experiments (Level 2) - Summary
+======================================================================
+
+Date:               2026-02-08 06:56:39.006988
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+Seed:               42
+Resolution:         1024x1024 (main), 384x384 (ref)
+true_cfg_scales:    [1.5, 2.0]
+step_counts:        [4, 8, 12]
+pose_sizes:         [512]
+Base image:         /workspace/wedding_decor/experiments/input/base_image_damask.png
+Total experiments:  144
+
+NEGATIVE PROMPT
+----------------------------------------------------------------------
+   
+
+TABLE RUNNERS TESTED
+----------------------------------------------------------------------
+  1. Velvet Cashmere
+     file:     Rectangle Velvet - Cashmere.jpeg
+     color:    cashmere
+     material: velvet
+  2. Velvet Hot Pink
+     file:     Rectangle Velvet - Hot Pink.png
+     color:    hot pink
+     material: velvet
+  3. Woven Ivory
+     file:     Rectangle Woven - Ivory.png
+     color:    ivory
+     material: woven
+
+IMAGE CONFIGURATIONS
+----------------------------------------------------------------------
+  2img                 Standard 2-image (base + runner swatch)
+                       prompts: ['minimal', 'detailed_2img']
+  3img_wireframe       3-image with wireframe/blueprint pose reference
+                       prompts: ['minimal', 'detailed_2img', 'detailed_3img']
+                       pose:    pose_wireframe.png
+  3img_realistic       3-image with realistic photo pose reference
+                       prompts: ['minimal', 'detailed_2img', 'detailed_3img']
+                       pose:    pose_realistic.png
+
+PROMPT TEMPLATES
+----------------------------------------------------------------------
+  minimal:
+    "Add only a table runner on top of the tablecloth in image 1, using the fabric shown in image 2. The runner is centered vertically across the round table from one edge to the opposite edge. The existing tablecloth, chairs, and background stay exactly the same."
+
+  detailed_2img:
+    "Add only a {color} {material} table runner on top of the tablecloth on the round table in image 1. Use the exact fabric color, texture, and pattern from image 2 for the runner. The runner is centered vertically across the table, running straight from the 12 o'clock edge to the 6 o'clock edge. It lies flat on the existing tablecloth surface and drapes smoothly over both edges with soft, natural fabric folds. The runner fabric looks like real {material} with authentic textile texture. The existing tablecloth underneath remains fully visible with its original color and pattern intact. The chairs, background, and all surroundings stay exactly as they appear in image 1. Photorealistic, professional event photography quality."
+
+  detailed_3img:
+    "Add only a {color} {material} table runner on top of the tablecloth on the round table. Use the exact fabric color, texture, and pattern from the runner swatch for the runner material. The runner is centered vertically across the round table, running straight from one edge to the opposite edge, matching the placement and layout shown in the reference. It lies flat on the existing tablecloth and drapes smoothly over both edges with soft, natural fabric folds. The runner fabric looks like real {material} with authentic textile texture. The existing tablecloth underneath remains fully visible with its original color and pattern intact. The chairs, background, and all surroundings stay exactly as they appear in the original scene. Photorealistic, professional event photography quality."
+
+RESULTS
+======================================================================
+
+Exp        Image Config    Prompt Style              Runner    CFG  Steps  Pose Size                  Pose   Time (s)
+---------------------------------------------------------------------------------------------------------------------
+  1                2img         minimal     Velvet Cashmere    1.5      4        n/a                  none      11.51
+  2                2img         minimal     Velvet Cashmere    1.5      8        n/a                  none      21.91
+  3                2img         minimal     Velvet Cashmere    1.5     12        n/a                  none      32.41
+  4                2img         minimal     Velvet Hot Pink    1.5      4        n/a                  none      11.42
+  5                2img         minimal     Velvet Hot Pink    1.5      8        n/a                  none      21.99
+  6                2img         minimal     Velvet Hot Pink    1.5     12        n/a                  none      33.12
+  7                2img         minimal         Woven Ivory    1.5      4        n/a                  none      11.87
+  8                2img         minimal         Woven Ivory    1.5      8        n/a                  none      22.27
+  9                2img         minimal         Woven Ivory    1.5     12        n/a                  none      32.86
+ 10                2img   detailed_2img     Velvet Cashmere    1.5      4        n/a                  none      13.66
+ 11                2img   detailed_2img     Velvet Cashmere    1.5      8        n/a                  none      23.02
+ 12                2img   detailed_2img     Velvet Cashmere    1.5     12        n/a                  none      32.92
+ 13                2img   detailed_2img     Velvet Hot Pink    1.5      4        n/a                  none      13.42
+ 14                2img   detailed_2img     Velvet Hot Pink    1.5      8        n/a                  none      24.25
+ 15                2img   detailed_2img     Velvet Hot Pink    1.5     12        n/a                  none      34.62
+ 16                2img   detailed_2img         Woven Ivory    1.5      4        n/a                  none      11.87
+ 17                2img   detailed_2img         Woven Ivory    1.5      8        n/a                  none      22.52
+ 18                2img   detailed_2img         Woven Ivory    1.5     12        n/a                  none      32.73
+ 19      3img_wireframe         minimal     Velvet Cashmere    1.5      4      512px    pose_wireframe.png      16.77
+ 20      3img_wireframe         minimal     Velvet Cashmere    1.5      8      512px    pose_wireframe.png      32.47
+ 21      3img_wireframe         minimal     Velvet Cashmere    1.5     12      512px    pose_wireframe.png      48.27
+ 22      3img_wireframe         minimal     Velvet Hot Pink    1.5      4      512px    pose_wireframe.png      18.19
+ 23      3img_wireframe         minimal     Velvet Hot Pink    1.5      8      512px    pose_wireframe.png      33.47
+ 24      3img_wireframe         minimal     Velvet Hot Pink    1.5     12      512px    pose_wireframe.png      47.94
+ 25      3img_wireframe         minimal         Woven Ivory    1.5      4      512px    pose_wireframe.png      17.01
+ 26      3img_wireframe         minimal         Woven Ivory    1.5      8      512px    pose_wireframe.png      33.39
+ 27      3img_wireframe         minimal         Woven Ivory    1.5     12      512px    pose_wireframe.png      48.24
+ 28      3img_wireframe   detailed_2img     Velvet Cashmere    1.5      4      512px    pose_wireframe.png      17.42
+ 29      3img_wireframe   detailed_2img     Velvet Cashmere    1.5      8      512px    pose_wireframe.png      32.68
+ 30      3img_wireframe   detailed_2img     Velvet Cashmere    1.5     12      512px    pose_wireframe.png      48.01
+ 31      3img_wireframe   detailed_2img     Velvet Hot Pink    1.5      4      512px    pose_wireframe.png      16.74
+ 32      3img_wireframe   detailed_2img     Velvet Hot Pink    1.5      8      512px    pose_wireframe.png      32.46
+ 33      3img_wireframe   detailed_2img     Velvet Hot Pink    1.5     12      512px    pose_wireframe.png      50.10
+ 34      3img_wireframe   detailed_2img         Woven Ivory    1.5      4      512px    pose_wireframe.png      17.82
+ 35      3img_wireframe   detailed_2img         Woven Ivory    1.5      8      512px    pose_wireframe.png      32.88
+ 36      3img_wireframe   detailed_2img         Woven Ivory    1.5     12      512px    pose_wireframe.png      47.96
+ 37      3img_wireframe   detailed_3img     Velvet Cashmere    1.5      4      512px    pose_wireframe.png      16.83
+ 38      3img_wireframe   detailed_3img     Velvet Cashmere    1.5      8      512px    pose_wireframe.png      33.19
+ 39      3img_wireframe   detailed_3img     Velvet Cashmere    1.5     12      512px    pose_wireframe.png      48.01
+ 40      3img_wireframe   detailed_3img     Velvet Hot Pink    1.5      4      512px    pose_wireframe.png      16.90
+ 41      3img_wireframe   detailed_3img     Velvet Hot Pink    1.5      8      512px    pose_wireframe.png      32.62
+ 42      3img_wireframe   detailed_3img     Velvet Hot Pink    1.5     12      512px    pose_wireframe.png      48.02
+ 43      3img_wireframe   detailed_3img         Woven Ivory    1.5      4      512px    pose_wireframe.png      18.80
+ 44      3img_wireframe   detailed_3img         Woven Ivory    1.5      8      512px    pose_wireframe.png      33.06
+ 45      3img_wireframe   detailed_3img         Woven Ivory    1.5     12      512px    pose_wireframe.png      48.46
+ 46      3img_realistic         minimal     Velvet Cashmere    1.5      4      512px    pose_realistic.png      17.14
+ 47      3img_realistic         minimal     Velvet Cashmere    1.5      8      512px    pose_realistic.png      32.83
+ 48      3img_realistic         minimal     Velvet Cashmere    1.5     12      512px    pose_realistic.png      47.91
+ 49      3img_realistic         minimal     Velvet Hot Pink    1.5      4      512px    pose_realistic.png      16.67
+ 50      3img_realistic         minimal     Velvet Hot Pink    1.5      8      512px    pose_realistic.png      32.54
+ 51      3img_realistic         minimal     Velvet Hot Pink    1.5     12      512px    pose_realistic.png      48.53
+ 52      3img_realistic         minimal         Woven Ivory    1.5      4      512px    pose_realistic.png      17.22
+ 53      3img_realistic         minimal         Woven Ivory    1.5      8      512px    pose_realistic.png      32.65
+ 54      3img_realistic         minimal         Woven Ivory    1.5     12      512px    pose_realistic.png      47.64
+ 55      3img_realistic   detailed_2img     Velvet Cashmere    1.5      4      512px    pose_realistic.png      17.23
+ 56      3img_realistic   detailed_2img     Velvet Cashmere    1.5      8      512px    pose_realistic.png      32.43
+ 57      3img_realistic   detailed_2img     Velvet Cashmere    1.5     12      512px    pose_realistic.png      48.30
+ 58      3img_realistic   detailed_2img     Velvet Hot Pink    1.5      4      512px    pose_realistic.png      17.15
+ 59      3img_realistic   detailed_2img     Velvet Hot Pink    1.5      8      512px    pose_realistic.png      32.78
+ 60      3img_realistic   detailed_2img     Velvet Hot Pink    1.5     12      512px    pose_realistic.png      48.10
+ 61      3img_realistic   detailed_2img         Woven Ivory    1.5      4      512px    pose_realistic.png      16.88
+ 62      3img_realistic   detailed_2img         Woven Ivory    1.5      8      512px    pose_realistic.png      33.57
+ 63      3img_realistic   detailed_2img         Woven Ivory    1.5     12      512px    pose_realistic.png      47.84
+ 64      3img_realistic   detailed_3img     Velvet Cashmere    1.5      4      512px    pose_realistic.png      16.94
+ 65      3img_realistic   detailed_3img     Velvet Cashmere    1.5      8      512px    pose_realistic.png      32.29
+ 66      3img_realistic   detailed_3img     Velvet Cashmere    1.5     12      512px    pose_realistic.png      48.56
+ 67      3img_realistic   detailed_3img     Velvet Hot Pink    1.5      4      512px    pose_realistic.png      18.13
+ 68      3img_realistic   detailed_3img     Velvet Hot Pink    1.5      8      512px    pose_realistic.png      32.85
+ 69      3img_realistic   detailed_3img     Velvet Hot Pink    1.5     12      512px    pose_realistic.png      48.41
+ 70      3img_realistic   detailed_3img         Woven Ivory    1.5      4      512px    pose_realistic.png      16.98
+ 71      3img_realistic   detailed_3img         Woven Ivory    1.5      8      512px    pose_realistic.png      32.28
+ 72      3img_realistic   detailed_3img         Woven Ivory    1.5     12      512px    pose_realistic.png      47.96
+ 73                2img         minimal     Velvet Cashmere    2.0      4        n/a                  none      12.17
+ 74                2img         minimal     Velvet Cashmere    2.0      8        n/a                  none      22.10
+ 75                2img         minimal     Velvet Cashmere    2.0     12        n/a                  none      33.26
+ 76                2img         minimal     Velvet Hot Pink    2.0      4        n/a                  none      11.34
+ 77                2img         minimal     Velvet Hot Pink    2.0      8        n/a                  none      22.42
+ 78                2img         minimal     Velvet Hot Pink    2.0     12        n/a                  none      32.58
+ 79                2img         minimal         Woven Ivory    2.0      4        n/a                  none      13.11
+ 80                2img         minimal         Woven Ivory    2.0      8        n/a                  none      23.15
+ 81                2img         minimal         Woven Ivory    2.0     12        n/a                  none      33.01
+ 82                2img   detailed_2img     Velvet Cashmere    2.0      4        n/a                  none      12.06
+ 83                2img   detailed_2img     Velvet Cashmere    2.0      8        n/a                  none      22.40
+ 84                2img   detailed_2img     Velvet Cashmere    2.0     12        n/a                  none      33.13
+ 85                2img   detailed_2img     Velvet Hot Pink    2.0      4        n/a                  none      11.70
+ 86                2img   detailed_2img     Velvet Hot Pink    2.0      8        n/a                  none      22.51
+ 87                2img   detailed_2img     Velvet Hot Pink    2.0     12        n/a                  none      32.96
+ 88                2img   detailed_2img         Woven Ivory    2.0      4        n/a                  none      12.65
+ 89                2img   detailed_2img         Woven Ivory    2.0      8        n/a                  none      23.08
+ 90                2img   detailed_2img         Woven Ivory    2.0     12        n/a                  none      33.73
+ 91      3img_wireframe         minimal     Velvet Cashmere    2.0      4      512px    pose_wireframe.png      16.91
+ 92      3img_wireframe         minimal     Velvet Cashmere    2.0      8      512px    pose_wireframe.png      32.48
+ 93      3img_wireframe         minimal     Velvet Cashmere    2.0     12      512px    pose_wireframe.png      48.25
+ 94      3img_wireframe         minimal     Velvet Hot Pink    2.0      4      512px    pose_wireframe.png      18.64
+ 95      3img_wireframe         minimal     Velvet Hot Pink    2.0      8      512px    pose_wireframe.png      32.85
+ 96      3img_wireframe         minimal     Velvet Hot Pink    2.0     12      512px    pose_wireframe.png      47.96
+ 97      3img_wireframe         minimal         Woven Ivory    2.0      4      512px    pose_wireframe.png      17.79
+ 98      3img_wireframe         minimal         Woven Ivory    2.0      8      512px    pose_wireframe.png      32.98
+ 99      3img_wireframe         minimal         Woven Ivory    2.0     12      512px    pose_wireframe.png      47.96
+100      3img_wireframe   detailed_2img     Velvet Cashmere    2.0      4      512px    pose_wireframe.png      16.94
+101      3img_wireframe   detailed_2img     Velvet Cashmere    2.0      8      512px    pose_wireframe.png      33.11
+102      3img_wireframe   detailed_2img     Velvet Cashmere    2.0     12      512px    pose_wireframe.png      48.56
+103      3img_wireframe   detailed_2img     Velvet Hot Pink    2.0      4      512px    pose_wireframe.png      17.96
+104      3img_wireframe   detailed_2img     Velvet Hot Pink    2.0      8      512px    pose_wireframe.png      32.29
+105      3img_wireframe   detailed_2img     Velvet Hot Pink    2.0     12      512px    pose_wireframe.png      47.87
+106      3img_wireframe   detailed_2img         Woven Ivory    2.0      4      512px    pose_wireframe.png      17.09
+107      3img_wireframe   detailed_2img         Woven Ivory    2.0      8      512px    pose_wireframe.png      32.51
+108      3img_wireframe   detailed_2img         Woven Ivory    2.0     12      512px    pose_wireframe.png      48.73
+109      3img_wireframe   detailed_3img     Velvet Cashmere    2.0      4      512px    pose_wireframe.png      16.78
+110      3img_wireframe   detailed_3img     Velvet Cashmere    2.0      8      512px    pose_wireframe.png      32.62
+111      3img_wireframe   detailed_3img     Velvet Cashmere    2.0     12      512px    pose_wireframe.png      47.82
+112      3img_wireframe   detailed_3img     Velvet Hot Pink    2.0      4      512px    pose_wireframe.png      17.46
+113      3img_wireframe   detailed_3img     Velvet Hot Pink    2.0      8      512px    pose_wireframe.png      32.61
+114      3img_wireframe   detailed_3img     Velvet Hot Pink    2.0     12      512px    pose_wireframe.png      49.10
+115      3img_wireframe   detailed_3img         Woven Ivory    2.0      4      512px    pose_wireframe.png      16.91
+116      3img_wireframe   detailed_3img         Woven Ivory    2.0      8      512px    pose_wireframe.png      32.55
+117      3img_wireframe   detailed_3img         Woven Ivory    2.0     12      512px    pose_wireframe.png      48.24
+118      3img_realistic         minimal     Velvet Cashmere    2.0      4      512px    pose_realistic.png      16.77
+119      3img_realistic         minimal     Velvet Cashmere    2.0      8      512px    pose_realistic.png      33.23
+120      3img_realistic         minimal     Velvet Cashmere    2.0     12      512px    pose_realistic.png      48.65
+121      3img_realistic         minimal     Velvet Hot Pink    2.0      4      512px    pose_realistic.png      17.02
+122      3img_realistic         minimal     Velvet Hot Pink    2.0      8      512px    pose_realistic.png      32.20
+123      3img_realistic         minimal     Velvet Hot Pink    2.0     12      512px    pose_realistic.png      48.66
+124      3img_realistic         minimal         Woven Ivory    2.0      4      512px    pose_realistic.png      17.13
+125      3img_realistic         minimal         Woven Ivory    2.0      8      512px    pose_realistic.png      32.79
+126      3img_realistic         minimal         Woven Ivory    2.0     12      512px    pose_realistic.png      48.14
+127      3img_realistic   detailed_2img     Velvet Cashmere    2.0      4      512px    pose_realistic.png      19.70
+128      3img_realistic   detailed_2img     Velvet Cashmere    2.0      8      512px    pose_realistic.png      32.59
+129      3img_realistic   detailed_2img     Velvet Cashmere    2.0     12      512px    pose_realistic.png      50.22
+130      3img_realistic   detailed_2img     Velvet Hot Pink    2.0      4      512px    pose_realistic.png      19.79
+131      3img_realistic   detailed_2img     Velvet Hot Pink    2.0      8      512px    pose_realistic.png      33.79
+132      3img_realistic   detailed_2img     Velvet Hot Pink    2.0     12      512px    pose_realistic.png      48.77
+133      3img_realistic   detailed_2img         Woven Ivory    2.0      4      512px    pose_realistic.png      18.89
+134      3img_realistic   detailed_2img         Woven Ivory    2.0      8      512px    pose_realistic.png      33.78
+135      3img_realistic   detailed_2img         Woven Ivory    2.0     12      512px    pose_realistic.png      48.68
+136      3img_realistic   detailed_3img     Velvet Cashmere    2.0      4      512px    pose_realistic.png      16.91
+137      3img_realistic   detailed_3img     Velvet Cashmere    2.0      8      512px    pose_realistic.png      34.94
+138      3img_realistic   detailed_3img     Velvet Cashmere    2.0     12      512px    pose_realistic.png      48.12
+139      3img_realistic   detailed_3img     Velvet Hot Pink    2.0      4      512px    pose_realistic.png      18.83
+140      3img_realistic   detailed_3img     Velvet Hot Pink    2.0      8      512px    pose_realistic.png      35.18
+141      3img_realistic   detailed_3img     Velvet Hot Pink    2.0     12      512px    pose_realistic.png      50.14
+142      3img_realistic   detailed_3img         Woven Ivory    2.0      4      512px    pose_realistic.png      19.41
+143      3img_realistic   detailed_3img         Woven Ivory    2.0      8      512px    pose_realistic.png      35.08
+144      3img_realistic   detailed_3img         Woven Ivory    2.0     12      512px    pose_realistic.png      48.46
+
+PER-CONFIG AVERAGES
+----------------------------------------------------------------------
+  2img                  runs=36  avg=22.66s  total=815.72s
+  3img_wireframe        runs=54  avg=32.83s  total=1772.69s
+  3img_realistic        runs=54  avg=33.14s  total=1789.65s
+
+AGGREGATE TIMING
+======================================================================
+  Model load:       237.09s
+  Warmup:           7.30s
+  Experiments:      4460.25s
+
+  Total inference:  4378.06s (144 images)
+  Total runtime:    4460.25s (74.3 min)

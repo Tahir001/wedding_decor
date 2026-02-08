@@ -1,0 +1,41 @@
+Experiment 107
+============================================================
+
+Date:               2026-02-08 06:35:27.217344
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+IMAGE CONFIGURATION
+------------------------------------------------------------
+config:             3img_wireframe
+description:        3-image with wireframe/blueprint pose reference
+num_images:         3
+pose_image:         pose_wireframe.png
+pose_size:          512x512
+
+TABLE RUNNER
+------------------------------------------------------------
+name:               Woven Ivory
+filename:           Rectangle Woven - Ivory.png
+color:              ivory
+material:           woven
+
+PROMPT
+------------------------------------------------------------
+style:              detailed_2img
+text:               Add only a ivory woven table runner on top of the tablecloth on the round table in image 1. Use the exact fabric color, texture, and pattern from image 2 for the runner. The runner is centered vertically across the table, running straight from the 12 o'clock edge to the 6 o'clock edge. It lies flat on the existing tablecloth surface and drapes smoothly over both edges with soft, natural fabric folds. The runner fabric looks like real woven with authentic textile texture. The existing tablecloth underneath remains fully visible with its original color and pattern intact. The chairs, background, and all surroundings stay exactly as they appear in image 1. Photorealistic, professional event photography quality.
+negative:           ' '
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     2.0
+num_inference_steps:8
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+pose_resolution:    512x512
+
+TIMING
+------------------------------------------------------------
+inference_time:     32.51s
+output:             /workspace/wedding_decor/experiments/output/tablerunners/optimized/experiment_107/runner_woven_ivory.png

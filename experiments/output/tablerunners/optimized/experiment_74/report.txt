@@ -1,0 +1,38 @@
+Experiment 74
+============================================================
+
+Date:               2026-02-08 06:19:52.980329
+Model:              Qwen/Qwen-Image-Edit-2511
+LoRA:               Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors
+
+IMAGE CONFIGURATION
+------------------------------------------------------------
+config:             2img
+description:        Standard 2-image (base + runner swatch)
+num_images:         2
+
+TABLE RUNNER
+------------------------------------------------------------
+name:               Velvet Cashmere
+filename:           Rectangle Velvet - Cashmere.jpeg
+color:              cashmere
+material:           velvet
+
+PROMPT
+------------------------------------------------------------
+style:              minimal
+text:               Add only a table runner on top of the tablecloth in image 1, using the fabric shown in image 2. The runner is centered vertically across the round table from one edge to the opposite edge. The existing tablecloth, chairs, and background stay exactly the same.
+negative:           ' '
+
+HYPERPARAMETERS
+------------------------------------------------------------
+true_cfg_scale:     2.0
+num_inference_steps:8
+guidance_scale:     1.0 (placeholder)
+seed:               42
+resolution:         1024x1024 (main), 384x384 (ref)
+
+TIMING
+------------------------------------------------------------
+inference_time:     22.10s
+output:             /workspace/wedding_decor/experiments/output/tablerunners/optimized/experiment_74/runner_velvet_cashmere.png
