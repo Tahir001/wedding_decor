@@ -52,8 +52,8 @@ DEFAULT_BASE_IMAGE = os.path.join(
 )
 
 # Pose reference images (image 3 candidates)
-POSE_WIREFRAME = os.path.join(INPUT_DIR, "pose_tablerunner.png")
-POSE_REALISTIC = os.path.join(INPUT_DIR, "reference_image_two_tablerunner.png")
+POSE_WIREFRAME = os.path.join(INPUT_DIR, "pose_wireframe.png")
+POSE_REALISTIC = os.path.join(INPUT_DIR, "pose_realistic.png")
 
 # =============================================================================
 # TABLE RUNNER DEFINITIONS
@@ -106,15 +106,11 @@ STEP_COUNTS = [4, 8]
 # Pose image sizes to test (3-image configs only)
 POSE_SIZES = [512]
 
-# Targeted negative prompt with anti-plastic + runner-specific terms
-# This is a negative prompt just for TABLE RUNNERs. The one above will have it's own. 
-NEGATIVE_PROMPT = (
-    "wrinkles, creases, folds, shadows, dark spots "
-    "changed furniture, changed tablecloth underneath "
-    "altered background, distortion, blurry, "
-    "plastic, artificial, glossy plastic, "
-    "shiny plastic, wrong placement, changed floor"
-)
+# Negative prompt: Qwen-Image-Edit-2511 does NOT support negative conditioning
+# (flow-matching architecture, not trained for it). The parameter must be present
+# to avoid pipeline errors, but only a single space is needed.
+# See: https://blog.promptmaster.pro/posts/qwen-image-negative-prompts
+NEGATIVE_PROMPT = " "
 
 # =============================================================================
 # IMAGE CONFIGURATIONS
@@ -150,41 +146,51 @@ IMAGE_CONFIGS = [
 # PROMPT TEMPLATES
 # =============================================================================
 #
-# NOTE ON QWEN MULTI-IMAGE PROMPTING:
-# - Qwen-Image-Edit-2511 has a known image ordering issue (GitHub #169).
-#   The model doesn't reliably map "image 1", "image 2", "image 3" to the
-#   correct inputs when referenced by number.
-# - Official Qwen prompts are DESCRIPTIVE (describe what you want) rather
-#   than REFERENTIAL (point at image numbers).
+# PROMPT STRATEGY (positive-only, natural language):
+# - Qwen-Image-Edit-2511 uses Qwen2.5-VL (7B VLM) as its text encoder,
+#   so rich descriptive sentences work far better than keyword lists.
+# - ALL negations ("do not", "no", "without") are avoided because the
+#   model can latch onto the unwanted concept tokens and produce them.
+#   Instead, preservation intent is stated positively.
 # - For 3-image configs, the 3rd image (pose/layout) provides implicit
-#   visual guidance through concatenation. Describing the desired layout
-#   in the prompt text works better than saying "follow image 3".
-# - We test both styles to compare.
+#   visual guidance through concatenation. We say "the reference" rather
+#   than "image 3" because Qwen has a known image ordering issue (#169)
+#   and doesn't reliably map numbered references to inputs.
 # =============================================================================
 
 PROMPT_TEMPLATES = {
     "minimal": (
-        "Add the table runner from image 2 on top of the tablecloth "
-        "in image 1. The tablecloth underneath remains unchanged. The runner runs vertically down the center of "
-        "the round table. Keep everything else the same."
+        "Add only a table runner on top of the tablecloth in image 1, "
+        "using the fabric shown in image 2. The runner is centered vertically "
+        "across the round table from one edge to the opposite edge. "
+        "The existing tablecloth, chairs, and background stay exactly the same."
     ),
     "detailed_2img": (
-        "Add the {color} {material} table runner from image 2 on top of the tablecloth, on the "
-        "the round table in image 1. The runner should be centered, "
-        "running vertically from one edge of the table to the other, "
-        "like 12 o'clock to 6 o'clock. It lies flat on top of the "
-        "existing tablecloth and drapes naturally over both edges, looking photo realistic. "
-        "Do not change the tablecloth color or pattern underneath."
-        "Do not move the chairs, or change the background."
+        "Add only a {color} {material} table runner on top of the tablecloth "
+        "on the round table in image 1. Use the exact fabric color, texture, "
+        "and pattern from image 2 for the runner. The runner is centered "
+        "vertically across the table, running straight from the 12 o'clock "
+        "edge to the 6 o'clock edge. It lies flat on the existing tablecloth "
+        "surface and drapes smoothly over both edges with soft, natural fabric "
+        "folds. The runner fabric looks like real {material} with authentic "
+        "textile texture. The existing tablecloth underneath remains fully "
+        "visible with its original color and pattern intact. The chairs, "
+        "background, and all surroundings stay exactly as they appear in "
+        "image 1. Photorealistic, professional event photography quality."
     ),
     "detailed_3img": (
-        "Add a {color} {material} table runner onto the round table in image 1."
-        "Use the exact fabric pattern and texture from the image 2. "
-        "Place the runner centered vertically across the "
-        "table, running from one edge to the other, draping over "
-        "both sides, looking photo-realistic. Match the runner placement and layout shown "
-        "in the reference image 3. The runner lies flat on the existing "
-        "tablecloth. Do not change the tablecloth. Do not move the chairs, or change the background."
+        "Add only a {color} {material} table runner on top of the tablecloth "
+        "on the round table. Use the exact fabric color, texture, and pattern "
+        "from the runner swatch for the runner material. The runner is centered "
+        "vertically across the round table, running straight from one edge to "
+        "the opposite edge, matching the placement and layout shown in the "
+        "reference. It lies flat on the existing tablecloth and drapes smoothly "
+        "over both edges with soft, natural fabric folds. The runner fabric "
+        "looks like real {material} with authentic textile texture. The existing "
+        "tablecloth underneath remains fully visible with its original color "
+        "and pattern intact. The chairs, background, and all surroundings stay "
+        "exactly as they appear in the original scene. Photorealistic, "
+        "professional event photography quality."
     ),
 }
 
