@@ -1,0 +1,18 @@
+# Background Removal & Item Extraction Pipeline
+#
+# Core deep learning
+torch
+torchvision
+transformers>=4.51.3
+accelerate
+
+# Segmentation (Grounded SAM 2)
+#   - GroundingDINO: loaded via transformers (AutoModelForZeroShotObjectDetection)
+#   - SAM2: native package preferred, transformers fallback available
+SAM-2
+
+# Alpha matting & image processing
+pymatting
+pillow
+scipy
+numpy
