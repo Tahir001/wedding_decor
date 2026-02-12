@@ -1,0 +1,66 @@
+{
+  "item_type": "cutlery",
+  "classes": [
+    "fork",
+    "knife",
+    "spoon"
+  ],
+  "segmentor": "sam2",
+  "enhance": true,
+  "total": 3,
+  "succeeded": 3,
+  "per_class": {
+    "fork": 40
+  },
+  "timing": {
+    "total": 18.13,
+    "avg": 6.04
+  },
+  "results": [
+    {
+      "in": "cutlery/GoldCutlery.jpeg",
+      "out": "outputs/cutlery/cutlery_GoldCutlery_rgba.png",
+      "dets": 15,
+      "cls": {
+        "fork": 15
+      },
+      "ratio": 0.1296,
+      "size": [
+        643,
+        360
+      ],
+      "t": 11.76,
+      "status": "success"
+    },
+    {
+      "in": "cutlery/cutlery.jpeg",
+      "out": "outputs/cutlery/cutlery_cutlery_rgba.png",
+      "dets": 14,
+      "cls": {
+        "fork": 14
+      },
+      "ratio": 0.1315,
+      "size": [
+        642,
+        360
+      ],
+      "t": 3.96,
+      "status": "success"
+    },
+    {
+      "in": "cutlery/red_cutlery.jpeg",
+      "out": "outputs/cutlery/cutlery_red_cutlery_rgba.png",
+      "dets": 11,
+      "cls": {
+        "fork": 11
+      },
+      "ratio": 0.1304,
+      "size": [
+        496,
+        284
+      ],
+      "t": 2.41,
+      "status": "success"
+    }
+  ]
+}
