@@ -164,7 +164,7 @@ class ModelManager:
         log.info("Loading GroundingDINO from %s ...", GROUNDING_DINO_ID)
         self._gdino_processor = AutoProcessor.from_pretrained(GROUNDING_DINO_ID)
         self._gdino_model = (
-            AutoModelForZeroShotObjectDetection.from_pretrained(GROUNDING_DINO_ID)
+            AutoModelF orZeroShotObjectDetection.from_pretrained(GROUNDING_DINO_ID)
             .to(self.device)
         )
         self._gdino_model.eval()
@@ -297,13 +297,24 @@ def detect_objects(
     with torch.no_grad():
         outputs = model(**inputs)
 
-    results = processor.post_process_grounded_object_detection(
-        outputs,
-        inputs["input_ids"],
-        box_threshold=box_threshold,
-        text_threshold=text_threshold,
-        target_sizes=[image.size[::-1]],  # (H, W)
-    )[0]
+    try:
+        # transformers versions that use box_threshold
+        results = processor.post_process_grounded_object_detection(
+            outputs,
+            inputs["input_ids"],
+            box_threshold=box_threshold,
+            text_threshold=text_threshold,
+            target_sizes=[image.size[::-1]],  # (H, W)
+        )[0]
+    except TypeError:
+        # transformers versions that renamed box_threshold -> threshold
+        results = processor.post_process_grounded_object_detection(
+            outputs,
+            inputs["input_ids"],
+            threshold=box_threshold,
+            text_threshold=text_threshold,
+            target_sizes=[image.size[::-1]],  # (H, W)
+        )[0]
 
     boxes = results["boxes"].cpu().numpy()
     scores = results["scores"].cpu().numpy()
