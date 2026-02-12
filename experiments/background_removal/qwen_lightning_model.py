@@ -10,6 +10,12 @@ CHANGES:
    - Explicit "image 1" and "image 2" references
    - Natural language, not verbose
 ===============================================================================
+
+Alright, I need you to analyze experiments/background_removal images folder. 
+
+Currently, in the script, we generate each image step by step for my wedding decor business 
+
+
 """
 
 import os
