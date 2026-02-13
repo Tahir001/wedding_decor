@@ -4,12 +4,10 @@
 
 Strategy (no GroundingDINO — just SAM2 automatic mask generation):
   1. SAM2 auto-segments every distinct region in the image
-  2. Three-stage filtering:
-     a) Size: reject regions too large (table/bg) or too small (noise)
-     b) Color: reject flat/uniform-color regions (table cloth fragments)
-     c) Dedup: remove overlapping masks (SAM2 generates hierarchical masks)
-  3. Everything that remains = the objects sitting ON the table
-  4. Combined into a single RGBA PNG with exact original positions preserved
+  2. Large regions (table surface, tablecloth, background) are filtered out
+  3. Tiny regions (noise, specks) are filtered out
+  4. Everything else = the objects sitting ON the table
+  5. Combined into a single RGBA PNG with exact original positions preserved
 
 The result can be placed directly on top of any other image/background
 and the layout of items is perfectly preserved.
@@ -60,10 +58,8 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"}
 SAM2_HF_ID = "facebook/sam2-hiera-large"
 
 # Filtering thresholds
-DEFAULT_MAX_AREA_PCT = 8.0      # masks covering >8% of image → table / background
+DEFAULT_MAX_AREA_PCT = 15.0     # masks covering >15% of image → table / background
 DEFAULT_MIN_AREA_PX = 100       # masks smaller than 100px → noise
-DEFAULT_MIN_COLOR_STD = 20.0    # masks with color std < this → flat surface (table/cloth)
-DEFAULT_IOU_DEDUP = 0.5         # IoU threshold for deduplicating overlapping masks
 DEFAULT_POINTS_PER_SIDE = 64    # SAM2 point grid density (higher = finds smaller items)
 
 # Post-processing
@@ -160,8 +156,8 @@ def viz_all_masks(image_bgr: np.ndarray, all_masks: List[Dict],
     log.info("📸 All masks → %s (green=kept, red=rejected)", output_path)
 
 
-def viz_masks_grid(masks_info: List[Dict], total_px: int, image_np: np.ndarray, output_path: str):
-    """Grid view of kept masks with area + score + color_std labels."""
+def viz_masks_grid(masks_info: List[Dict], total_px: int, output_path: str):
+    """Grid view of kept masks with area + score labels."""
     if not masks_info:
         return
     import matplotlib
@@ -177,11 +173,9 @@ def viz_masks_grid(masks_info: List[Dict], total_px: int, image_np: np.ndarray, 
     for i, m in enumerate(masks_info):
         axes[i].imshow(m["segmentation"].astype(np.uint8) * 255, cmap="gray")
         pct = m["area"] / total_px * 100
-        pixels = image_np[m["segmentation"]]
-        cstd = float(np.std(pixels.astype(np.float32), axis=0).mean()) if len(pixels) > 0 else 0
         axes[i].set_title(
             f"#{i}  {m['area']}px ({pct:.2f}%)\n"
-            f"iou={m['predicted_iou']:.2f}  stab={m['stability_score']:.2f}  clr={cstd:.0f}",
+            f"iou={m['predicted_iou']:.2f}  stab={m['stability_score']:.2f}",
             fontsize=9, fontweight="bold",
         )
         axes[i].axis("off")
@@ -202,47 +196,6 @@ def viz_overlay(image_bgr: np.ndarray, combined_mask: np.ndarray, output_path: s
 
 
 # ══════════════════════════════════════════════════════════════════
-# Mask Filtering Helpers
-# ══════════════════════════════════════════════════════════════════
-def compute_iou(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
-    """Intersection-over-Union between two boolean masks."""
-    intersection = np.logical_and(mask_a, mask_b).sum()
-    union = np.logical_or(mask_a, mask_b).sum()
-    return float(intersection / union) if union > 0 else 0.0
-
-
-def deduplicate_masks(masks: List[Dict], iou_threshold: float = DEFAULT_IOU_DEDUP) -> List[Dict]:
-    """Remove overlapping masks. When two masks overlap > threshold, keep the
-    one with the higher stability score (more confident segmentation)."""
-    if len(masks) <= 1:
-        return masks
-    # Sort by stability score descending — best masks get priority
-    ranked = sorted(masks, key=lambda m: m["stability_score"], reverse=True)
-    kept: List[Dict] = []
-    for m in ranked:
-        duplicate = False
-        for existing in kept:
-            if compute_iou(m["segmentation"], existing["segmentation"]) > iou_threshold:
-                duplicate = True
-                break
-        if not duplicate:
-            kept.append(m)
-    return kept
-
-
-def is_flat_surface(image_np: np.ndarray, mask: np.ndarray, min_color_std: float) -> bool:
-    """Check if a masked region has very uniform color → likely table/cloth surface.
-    Real objects (forks, plates, glasses) have highlights, shadows, edges that
-    produce higher color variation. Table surfaces are flat and uniform."""
-    pixels = image_np[mask]
-    if len(pixels) < 10:
-        return False
-    # Average per-channel standard deviation
-    color_std = float(np.std(pixels.astype(np.float32), axis=0).mean())
-    return color_std < min_color_std
-
-
-# ══════════════════════════════════════════════════════════════════
 # Core Extraction
 # ══════════════════════════════════════════════════════════════════
 def extract(
@@ -251,8 +204,6 @@ def extract(
     extractor: SAM2AutoExtractor,
     max_area_pct: float = DEFAULT_MAX_AREA_PCT,
     min_area_px: int = DEFAULT_MIN_AREA_PX,
-    min_color_std: float = DEFAULT_MIN_COLOR_STD,
-    iou_dedup: float = DEFAULT_IOU_DEDUP,
     padding: int = DEFAULT_PADDING,
     feather_radius: int = DEFAULT_FEATHER,
     debug: bool = False,
@@ -279,52 +230,26 @@ def extract(
     all_masks.sort(key=lambda m: m["area"], reverse=True)
     log.info("SAM2 auto: %d region(s) found in %.1fs", len(all_masks), seg_time)
 
-    # ── 2. Three-stage filtering ──
-    #   Stage A: reject by area (too big = table/bg, too small = noise)
-    #   Stage B: reject flat-colored surfaces (table cloth fragments)
-    #   Stage C: deduplicate overlapping masks
+    # ── 2. Filter: reject table/background (big) and noise (tiny) ──
     kept_indices: List[int] = []
     rejected_large = 0
     rejected_small = 0
-    rejected_flat = 0
     for i, m in enumerate(all_masks):
         area_pct = m["area"] / total_px * 100
-        # A: too big
         if area_pct > max_area_pct:
-            log.info("  🚫 region %2d: %6d px (%5.1f%%) — REJECTED (too large)", i, m["area"], area_pct)
+            log.info("  🚫 region %2d: %6d px (%5.1f%%) — REJECTED (table/background)", i, m["area"], area_pct)
             rejected_large += 1
             continue
-        # A: too small
         if m["area"] < min_area_px:
             rejected_small += 1
             continue
-        # B: flat color = table/cloth surface
-        pixels = image_np[m["segmentation"]]
-        color_std = float(np.std(pixels.astype(np.float32), axis=0).mean())
-        if color_std < min_color_std:
-            log.info("  🚫 region %2d: %6d px (%5.1f%%)  color_std=%.1f — REJECTED (flat surface)",
-                     i, m["area"], area_pct, color_std)
-            rejected_flat += 1
-            continue
-        log.info("  ✅ region %2d: %6d px (%5.1f%%)  stab=%.2f  iou=%.2f  color_std=%.1f",
-                 i, m["area"], area_pct, m["stability_score"], m["predicted_iou"], color_std)
+        log.info("  ✅ region %2d: %6d px (%5.1f%%)  stab=%.2f  iou=%.2f",
+                 i, m["area"], area_pct, m["stability_score"], m["predicted_iou"])
         kept_indices.append(i)
 
     kept_masks = [all_masks[i] for i in kept_indices]
-    log.info("After size+color filter: %d kept, %d too-large, %d too-small, %d flat-surface (of %d total)",
-             len(kept_masks), rejected_large, rejected_small, rejected_flat, len(all_masks))
-
-    # C: deduplicate overlapping masks
-    if len(kept_masks) > 1:
-        before = len(kept_masks)
-        kept_masks = deduplicate_masks(kept_masks, iou_threshold=iou_dedup)
-        if len(kept_masks) < before:
-            log.info("  Deduplicated: %d → %d masks (removed %d overlaps)",
-                     before, len(kept_masks), before - len(kept_masks))
-    # Rebuild kept_indices for viz (after dedup, indices may have changed)
-    kept_segs = {id(m["segmentation"]): True for m in kept_masks}
-    kept_indices = [i for i, m in enumerate(all_masks) if id(m["segmentation"]) in kept_segs]
-    log.info("Final: %d object mask(s) kept", len(kept_masks))
+    log.info("Result: %d kept, %d rejected-large, %d rejected-small (of %d total)",
+             len(kept_masks), rejected_large, rejected_small, len(all_masks))
 
     if not kept_masks:
         log.warning("⚠️  No objects found in %s", image_path)
@@ -344,7 +269,7 @@ def extract(
     if debug:
         viz_all_masks(image_bgr, all_masks, set(kept_indices),
                       str(odir / f"{stem}_1_all_masks.png"))
-        viz_masks_grid(kept_masks, total_px, image_np, str(odir / f"{stem}_2_kept_grid.png"))
+        viz_masks_grid(kept_masks, total_px, str(odir / f"{stem}_2_kept_grid.png"))
         viz_overlay(image_bgr, combined, str(odir / f"{stem}_3_overlay.png"))
 
     # ── 5. Smooth edges + feather alpha ──
@@ -372,7 +297,6 @@ def extract(
         "input": image_path, "output": output_path, "status": "success",
         "total_regions": len(all_masks), "kept": len(kept_masks),
         "rejected_large": rejected_large, "rejected_small": rejected_small,
-        "rejected_flat": rejected_flat,
         "mask_area_px": mask_area, "mask_pct": round(mask_pct, 2),
         "output_size": (ow, oh), "elapsed": round(elapsed, 2),
         "seg_time": round(seg_time, 2),
@@ -449,14 +373,10 @@ Examples:
 
     # Filtering
     p.add_argument("--max-area-pct", type=float, default=DEFAULT_MAX_AREA_PCT,
-                   help=f"Reject masks larger than this %% of image — lower if table leaks through (default: {DEFAULT_MAX_AREA_PCT})")
+                   help=f"Reject masks larger than this %% of image — increase if items are being dropped, "
+                        f"decrease if table leaks through (default: {DEFAULT_MAX_AREA_PCT})")
     p.add_argument("--min-area-px", type=int, default=DEFAULT_MIN_AREA_PX,
                    help=f"Reject masks smaller than this pixel count (default: {DEFAULT_MIN_AREA_PX})")
-    p.add_argument("--min-color-std", type=float, default=DEFAULT_MIN_COLOR_STD,
-                   help=f"Reject masks with color std below this — catches flat table surfaces. "
-                        f"Lower=stricter, 0=disable (default: {DEFAULT_MIN_COLOR_STD})")
-    p.add_argument("--iou-dedup", type=float, default=DEFAULT_IOU_DEDUP,
-                   help=f"IoU threshold for removing duplicate overlapping masks (default: {DEFAULT_IOU_DEDUP})")
 
     # SAM2 settings
     p.add_argument("--points-per-side", type=int, default=DEFAULT_POINTS_PER_SIDE,
@@ -476,8 +396,6 @@ Examples:
     common = dict(
         max_area_pct=args.max_area_pct,
         min_area_px=args.min_area_px,
-        min_color_std=args.min_color_std,
-        iou_dedup=args.iou_dedup,
         padding=args.padding,
         feather_radius=args.feather,
         debug=args.debug,
