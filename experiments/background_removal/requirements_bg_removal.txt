@@ -1,5 +1,5 @@
-# Wedding Decor — Item Extraction Pipeline
-# No diffusion models — detection + segmentation + visualization only
+# Wedding Decor — Production-Grade Item Extraction Pipeline
+# Two approaches: SAM2 + alpha matting (A) and BiRefNet/RMBG-2.0 (B)
 
 torch>=2.1.0
 torchvision>=0.16.0
@@ -9,13 +9,19 @@ pillow>=10.0.0
 scipy>=1.11.0
 numpy>=1.24.0
 
-# Visualization (from Roboflow Grounded-SAM pattern)
+# Visualization
 supervision>=0.22.0
 opencv-python-headless>=4.8.0
 matplotlib>=3.7.0
 
-# Segmentation backends (install at least one):
-# SAM2 native (best quality): pip install git+https://github.com/facebookresearch/sam2.git
-# FastSAM (10-20x faster):    pip install git+https://github.com/CASIA-IVA-Lab/FastSAM.git
-#                              + wget FastSAM-x.pt weights
-# If neither installed, SAM2 falls back to transformers backend
+# Alpha matting (Script A: SAM2 + PyMatting)
+pymatting>=1.1.0
+
+# Segmentation backends:
+# SAM2 native (Script A): pip install git+https://github.com/facebookresearch/sam2.git
+# RMBG-2.0 / BiRefNet (Script B): loaded via transformers, no extra install needed
+
+# RunPod quick-install:
+#   pip install pymatting
+#   pip install git+https://github.com/facebookresearch/sam2.git  (if not already)
+#   Models auto-download from HuggingFace on first run
