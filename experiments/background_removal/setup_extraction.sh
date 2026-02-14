@@ -2,7 +2,7 @@
 # =============================================================================
 # WEDDING DECOR — EXTRACTION PIPELINE SETUP (RunPod / GPU Server)
 # =============================================================================
-# Models: GroundingDINO (~1GB) + SAM2 (~1.5GB) + FastSAM (~150MB)
+# Models: GroundingDINO (~1GB) + SAM2 (~1.5GB)
 # Viz:    supervision (Roboflow) + matplotlib for debug outputs
 # NO diffusion models. Setup in ~3-5 min.
 # =============================================================================
@@ -48,15 +48,6 @@ pip install -q \
 pip install -q git+https://github.com/facebookresearch/sam2.git 2>/dev/null && \
     echo "✅ SAM2 native" || echo "⚠️  SAM2 → transformers fallback"
 
-# FastSAM
-pip install -q git+https://github.com/CASIA-IVA-Lab/FastSAM.git 2>/dev/null && \
-    echo "✅ FastSAM package" || echo "⚠️  FastSAM unavailable"
-
-FASTSAM_W="/workspace/.cache/FastSAM-x.pt"
-[ ! -f "$FASTSAM_W" ] && wget -q -O "$FASTSAM_W" \
-    "https://huggingface.co/spaces/An-619/FastSAM/resolve/main/weights/FastSAM-x.pt" 2>/dev/null
-ln -sf "$FASTSAM_W" /workspace/FastSAM-x.pt 2>/dev/null || true
-
 # Download HF models
 python << 'PYEOF'
 import os; os.environ['HF_HOME']='/workspace/.cache/huggingface'; os.environ['HF_HUB_ENABLE_HF_TRANSFER']='1'
@@ -81,8 +72,6 @@ try: import supervision as sv; print(f"supervision {sv.__version__} ✅")
 except: print("supervision ❌")
 try: from sam2.build_sam import build_sam2_hf; print("SAM2: native ✅")
 except: print("SAM2: transformers fallback")
-try: from fastsam import FastSAM; print("FastSAM: ✅")
-except: print("FastSAM: ❌")
 PYEOF
 
 echo ""
@@ -92,11 +81,14 @@ echo "========================================="
 echo ""
 echo "cd /workspace/wedding_decor/experiments/background_removal"
 echo ""
-echo "# Extract with debug (SAM2):"
-echo "python 02_extract_items.py --batch --input-dir ./cutlery --item-type cutlery --output-dir ./outputs/cutlery --segmentor sam2 --debug"
+echo "# 1. Basic SAM2 Extraction (Fastest, usually good enough):"
+echo "python 02_extract_items.py --batch --input-dir ./cutlery --output-dir ./outputs/cutlery --debug"
 echo ""
-echo "# Extract with debug (FastSAM - faster):"
-echo "python 02_extract_items.py --batch --input-dir ./cutlery --item-type cutlery --output-dir ./outputs/cutlery_fast --segmentor fastsam --debug"
+echo "# 2. SAM2 + Alpha Matting (Slower, better edges):"
+echo "python 02a_extract_sam2_matting.py --batch --input-dir ./cutlery --output-dir ./outputs/cutlery_matting --debug"
 echo ""
-echo "# Debug outputs: *_1_detections.png, *_2_masks_grid.png, *_3_overlay.png, *_4_rgba_full.png"
+echo "# 3. BiRefNet / RMBG-2.0 (Deep Learning Alpha):"
+echo "python 02b_extract_birefnet.py --batch --input-dir ./cutlery --output-dir ./outputs/cutlery_biref --debug"
+echo ""
+echo "# Debug outputs are saved to the output directory."
 echo "========================================="
