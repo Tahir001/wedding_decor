@@ -42,8 +42,8 @@ MIN_ASPECT_RATIO = 0.4   # Ignore skinny Cutlery
 MAX_ASPECT_RATIO = 2.5   # Ignore long Table Runners
 
 # Matting settings (Sharp edges for hard plates)
-ERODE_PX = 2
-DILATE_PX = 4
+ERODE_PX = 1
+DILATE_PX = 30
 
 class SAM2Loader:
     _instance = None
@@ -177,7 +177,7 @@ def process_image(img_path: Path, output_path: Path, generator, debug=False, no_
         img_f64 = img_np.astype(np.float64) / 255.0
         try:
             from pymatting import estimate_alpha_cf, estimate_foreground_ml
-            alpha = estimate_alpha_cf(img_f64, trimap, laplacian_kwargs={"epsilon": 1e-7})
+            alpha = estimate_alpha_cf(img_f64, trimap, laplacian_kwargs={"epsilon": 1e-6})
             foreground = estimate_foreground_ml(img_f64, alpha)
         except ImportError:
             alpha = trimap
