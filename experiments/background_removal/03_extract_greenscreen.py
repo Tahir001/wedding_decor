@@ -93,30 +93,50 @@ def compute_alpha(img_bgr: np.ndarray, bg_color: np.ndarray,
 
 
 def refine_alpha_hsv(img_bgr: np.ndarray, alpha: np.ndarray,
+                     bg_color: np.ndarray,
                      shadow_strength: float) -> np.ndarray:
     """
-    HSV pass to sharpen the background/shadow boundary.
+    HSV safety pass: hard-zero obvious green-screen pixels, detect shadows.
 
-    Pure green-screen pixels (high saturation, green hue, bright) are forced
-    to alpha 0.  Shadow pixels (green hue but lower S/V) keep partial alpha
-    proportional to their desaturation.
+    The LAB distance (compute_alpha) already handles the main keying well.
+    This pass does two targeted things:
+      1. Forces clearly green-screen pixels to alpha=0 (removes any LAB noise)
+      2. Detects shadow regions and assigns partial alpha from luminance drop
     """
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float64)
     h_ch, s_ch, v_ch = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
 
-    green_hue = (h_ch >= 30) & (h_ch <= 90)
+    bg_hsv = cv2.cvtColor(
+        bg_color.reshape(1, 1, 3), cv2.COLOR_BGR2HSV
+    ).astype(np.float64).ravel()
+    bg_hue, bg_sat, bg_val = bg_hsv[0], bg_hsv[1], bg_hsv[2]
 
-    # Pure background: green hue + high saturation + bright
-    pure_bg = green_hue & (s_ch > 80) & (v_ch > 80)
-    greenness = np.where(pure_bg, s_ch / 255.0, 0.0)
-    alpha[pure_bg] = np.minimum(alpha[pure_bg], 1.0 - greenness[pure_bg])
+    is_green_screen = bg_sat > 50 and 30 <= bg_hue <= 90
+    if not is_green_screen:
+        log.info("  HSV: non-green background detected, skipping HSV refinement")
+        return alpha
 
-    # Shadow boost: green hue but desaturated/darker -> add partial alpha
-    shadow_zone = green_hue & (s_ch < 180) & (v_ch < 200) & ~pure_bg
-    desat = 1.0 - s_ch[shadow_zone] / 255.0
-    alpha[shadow_zone] = np.clip(
-        alpha[shadow_zone] + desat * shadow_strength * 0.5, 0.0, 1.0
-    )
+    log.info(f"  HSV: green screen detected (H={bg_hue:.0f} S={bg_sat:.0f} V={bg_val:.0f})")
+
+    hue_tolerance = 15
+    hue_match = (h_ch >= bg_hue - hue_tolerance) & (h_ch <= bg_hue + hue_tolerance)
+
+    # 1. HARD ZERO: high-saturation green-hue pixels are definitely background
+    hard_bg = hue_match & (s_ch > 80) & (v_ch > 60)
+    alpha[hard_bg] = 0.0
+
+    # 2. SHADOW DETECTION: green hue but darker/less saturated than the
+    #    main background. These get partial alpha derived from how much
+    #    the value channel dropped relative to the background brightness.
+    shadow_candidates = hue_match & ~hard_bg & (s_ch > 20) & (v_ch > 20)
+    if np.any(shadow_candidates):
+        brightness_ratio = v_ch[shadow_candidates] / (bg_val + 1e-6)
+        shadow_alpha = np.clip(
+            (1.0 - brightness_ratio) * shadow_strength, 0.0, 0.6
+        )
+        alpha[shadow_candidates] = np.maximum(
+            alpha[shadow_candidates], shadow_alpha
+        )
 
     return alpha
 
@@ -215,7 +235,7 @@ def process_image(img_path: Path, output_path: Path,
 
         bg_color = sample_background_color(img_bgr)
         alpha = compute_alpha(img_bgr, bg_color, shadow_strength)
-        alpha = refine_alpha_hsv(img_bgr, alpha, shadow_strength)
+        alpha = refine_alpha_hsv(img_bgr, alpha, bg_color, shadow_strength)
         alpha = soften_edges(alpha, edge_softness)
 
         img_clean = despill_green(img_bgr, alpha, despill_strength)
