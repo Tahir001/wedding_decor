@@ -3,7 +3,7 @@
 04_extract_worldclass.py — Two-Stage Professional Background Removal
 
 Pipeline:
-  Stage 1: RMBG-2.0 (BiRefNet-based) → high-quality binary mask
+  Stage 1: BiRefNet (or RMBG-2.0) → high-quality binary mask
   Stage 2: ViTMatte (Vision Transformer) → refined alpha matte with shadows
   Post:    Green despill (auto-detected) → clean RGBA output
 
@@ -33,12 +33,13 @@ log = logging.getLogger(__name__)
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"}
 
+BIREFNET_MODEL_ID = "ZhengPeng7/BiRefNet"
 RMBG_MODEL_ID = "briaai/RMBG-2.0"
 VITMATTE_MODEL_ID = "hustvl/vitmatte-small-distinctions-646"
 
-RMBG_INPUT_SIZE = (1024, 1024)
-RMBG_MEAN = [0.485, 0.456, 0.406]
-RMBG_STD = [0.229, 0.224, 0.225]
+SEG_INPUT_SIZE = (1024, 1024)
+SEG_MEAN = [0.485, 0.456, 0.406]
+SEG_STD = [0.229, 0.224, 0.225]
 
 DEFAULT_SHADOW_RADIUS = 40
 DEFAULT_ERODE_RADIUS = 5
@@ -47,29 +48,49 @@ DEFAULT_DESPILL_STRENGTH = 0.7
 
 # ── Model loaders (singleton) ───────────────────────────────────────
 
-class RMBGLoader:
+class SegModelLoader:
     _model = None
     _transform = None
+    _name = None
 
     @classmethod
-    def get(cls, device: str):
-        if cls._model is None:
-            log.info(f"Loading RMBG-2.0 ({RMBG_MODEL_ID})...")
-            from transformers import AutoModelForImageSegmentation
+    def get(cls, device: str, prefer: str | None = None):
+        if cls._model is not None:
+            return cls._model, cls._transform
 
-            cls._model = (
-                AutoModelForImageSegmentation
-                .from_pretrained(RMBG_MODEL_ID, trust_remote_code=True)
-                .eval()
-                .to(device)
-            )
-            cls._transform = transforms.Compose([
-                transforms.Resize(RMBG_INPUT_SIZE),
-                transforms.ToTensor(),
-                transforms.Normalize(RMBG_MEAN, RMBG_STD),
-            ])
-            log.info("  RMBG-2.0 loaded.")
-        return cls._model, cls._transform
+        from transformers import AutoModelForImageSegmentation
+
+        candidates = [prefer] if prefer else [BIREFNET_MODEL_ID, RMBG_MODEL_ID]
+
+        for model_id in candidates:
+            try:
+                log.info(f"Loading segmentation model: {model_id} ...")
+                cls._model = (
+                    AutoModelForImageSegmentation
+                    .from_pretrained(
+                        model_id,
+                        trust_remote_code=True,
+                        low_cpu_mem_usage=False,
+                    )
+                    .float()
+                    .eval()
+                    .to(device)
+                )
+                cls._name = model_id
+                cls._transform = transforms.Compose([
+                    transforms.Resize(SEG_INPUT_SIZE),
+                    transforms.ToTensor(),
+                    transforms.Normalize(SEG_MEAN, SEG_STD),
+                ])
+                log.info(f"  {model_id} loaded successfully.")
+                return cls._model, cls._transform
+            except Exception as e:
+                log.warning(f"  Could not load {model_id}: {e}")
+
+        raise RuntimeError(
+            "No segmentation model could be loaded. "
+            "Try: pip install timm safetensors transformers"
+        )
 
 
 class ViTMatteLoader:
@@ -93,11 +114,12 @@ class ViTMatteLoader:
         return cls._model, cls._processor
 
 
-# ── Stage 1: RMBG-2.0 segmentation ──────────────────────────────────
+# ── Stage 1: Segmentation (BiRefNet / RMBG-2.0) ─────────────────────
 
-def run_rmbg(img_pil: Image.Image, device: str) -> np.ndarray:
-    """Run RMBG-2.0 and return a float32 mask in [0, 1] at original resolution."""
-    model, transform = RMBGLoader.get(device)
+def run_segmentation(img_pil: Image.Image, device: str,
+                     model_id: str | None = None) -> np.ndarray:
+    """Run segmentation model and return a float32 mask in [0, 1] at original resolution."""
+    model, transform = SegModelLoader.get(device, prefer=model_id)
     orig_size = img_pil.size  # (W, H)
 
     input_tensor = transform(img_pil).unsqueeze(0).to(device)
@@ -255,7 +277,8 @@ def save_debug(img_rgb: np.ndarray, mask: np.ndarray, trimap: np.ndarray,
 def process_image(img_path: Path, output_path: Path, device: str,
                   shadow_radius: int, erode_radius: int,
                   despill_strength: float,
-                  no_matting: bool, debug: bool):
+                  no_matting: bool, debug: bool,
+                  seg_model: str | None = None):
     try:
         log.info(f"Processing: {img_path.name}")
         img_pil = Image.open(img_path).convert("RGB")
@@ -263,9 +286,9 @@ def process_image(img_path: Path, output_path: Path, device: str,
         h, w = img_np.shape[:2]
         log.info(f"  Size: {w}x{h}")
 
-        # ── Stage 1: RMBG-2.0 ───────────────────────────────────────
-        mask = run_rmbg(img_pil, device)
-        log.info(f"  RMBG mask: {np.mean(mask > 0.5) * 100:.1f}% foreground")
+        # ── Stage 1: Segmentation ────────────────────────────────────
+        mask = run_segmentation(img_pil, device, model_id=seg_model)
+        log.info(f"  Segmentation mask: {np.mean(mask > 0.5) * 100:.1f}% foreground")
 
         if no_matting:
             alpha = mask.astype(np.float64)
@@ -309,7 +332,7 @@ def process_image(img_path: Path, output_path: Path, device: str,
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(
-        description="World-class background removal: RMBG-2.0 + ViTMatte",
+        description="World-class background removal: BiRefNet + ViTMatte",
     )
     p.add_argument("--input-dir", required=True,
                    help="Directory with input images")
@@ -330,7 +353,10 @@ if __name__ == "__main__":
                    help=f"Green spill removal strength 0.0-1.0 "
                         f"(default {DEFAULT_DESPILL_STRENGTH})")
     p.add_argument("--no-matting", action="store_true",
-                   help="Skip ViTMatte; use RMBG mask directly (faster, no shadows)")
+                   help="Skip ViTMatte; use segmentation mask directly (faster, no shadows)")
+    p.add_argument("--seg-model", default=None,
+                   help=f"HuggingFace model ID for segmentation "
+                        f"(default: tries {BIREFNET_MODEL_ID}, then {RMBG_MODEL_ID})")
     p.add_argument("--device", default=None,
                    help="Device override (default: auto-detect cuda/mps/cpu)")
     args = p.parse_args()
@@ -373,6 +399,7 @@ if __name__ == "__main__":
             despill_strength=args.despill_strength,
             no_matting=args.no_matting,
             debug=args.debug,
+            seg_model=args.seg_model,
         )
 
     log.info("Done.")
