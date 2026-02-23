@@ -17,6 +17,9 @@ Key insight: ViTMatte outputs alpha ≈ 0.97 for definite-foreground
 pixels. The decontamination formula F=(C-(1-α)B)/α then shifts those
 colors by ~3%. Clamping alpha to exactly 1.0 in confident regions
 eliminates this entirely.
+
+export HF_TOKEN="token"
+
 """
 
 from __future__ import annotations
@@ -50,12 +53,12 @@ SEG_INPUT_SIZE = (1024, 1024)
 SEG_MEAN = [0.485, 0.456, 0.406]
 SEG_STD = [0.229, 0.224, 0.225]
 
-DEFAULT_SHADOW_RADIUS = 40
+DEFAULT_SHADOW_RADIUS = 20
 DEFAULT_ERODE_RADIUS = 5
 DEFAULT_DESPILL_STRENGTH = 0.7
-DEFAULT_SHARPEN_AMOUNT = 0.6
-DEFAULT_CONTRAST_STRENGTH = 1.2
-DEFAULT_SATURATION_BOOST = 1.15
+DEFAULT_SHARPEN_AMOUNT = 0.7
+DEFAULT_CONTRAST_STRENGTH = 1.0
+DEFAULT_SATURATION_BOOST = 1.0
 
 
 # ── Model loaders ───────────────────────────────────────────────────
@@ -549,9 +552,9 @@ if __name__ == "__main__":
         description="Production background removal v5: "
                     "RMBG-2.0 + ViTMatte-BASE + trimap-clamped alpha",
     )
-    p.add_argument("--input-dir", required=True)
-    p.add_argument("--output-dir", required=True)
-    p.add_argument("--debug", action="store_true")
+    p.add_argument("--input-dir", default="experiments/background_removal/plates")
+    p.add_argument("--output-dir", default="experiments/background_removal/outputs/bg_remover_sharp_only")
+    p.add_argument("--debug", action="store_true", default=True)
     p.add_argument("--shadow-radius", type=int,
                    default=DEFAULT_SHADOW_RADIUS)
     p.add_argument("--erode-radius", type=int,
@@ -562,18 +565,18 @@ if __name__ == "__main__":
                    help="Use RMBG-2.0's native alpha directly, no ViTMatte")
     p.add_argument("--seg-model", default=None,
                    help="Override segmentation model HF ID")
-    p.add_argument("--hf-token", default=None,
+    p.add_argument("--hf-token", default=os.environ.get("HF_TOKEN"),
                    help="HuggingFace token for gated models (RMBG-2.0)")
     p.add_argument("--sharpen", type=float,
                    default=DEFAULT_SHARPEN_AMOUNT,
-                   help="Unsharp mask amount (0=off, default=0.6)")
+                   help="Unsharp mask amount (0=off, default=0.7)")
     p.add_argument("--contrast", type=float,
                    default=DEFAULT_CONTRAST_STRENGTH,
-                   help="CLAHE contrast strength (1.0=off, default=1.2)")
+                   help="CLAHE contrast strength (1.0=off, default=1.0)")
     p.add_argument("--saturation", type=float,
                    default=DEFAULT_SATURATION_BOOST,
-                   help="Saturation boost factor (1.0=off, default=1.15)")
-    p.add_argument("--device", default=None)
+                   help="Saturation boost factor (1.0=off, default=1.0)")
+    p.add_argument("--device", default="cpu")
     args = p.parse_args()
 
     if args.device:
