@@ -1,0 +1,152 @@
+{
+    "template": {
+        "image": "base_image_table.png",
+        "width": 1024,
+        "height": 1024
+    },
+    "camera": {
+        "angle_degrees": 45
+    },
+    "table": {
+        "center": [
+            0.5,
+            0.5
+        ],
+        "radius": 0.32,
+        "num_settings": 8,
+        "start_angle_degrees": -90
+    },
+    "zones": [
+        {
+            "id": 0,
+            "x": 0.5,
+            "y": 0.18,
+            "rotation_deg": 0
+        },
+        {
+            "id": 1,
+            "x": 0.726,
+            "y": 0.226,
+            "rotation_deg": 45
+        },
+        {
+            "id": 2,
+            "x": 0.82,
+            "y": 0.5,
+            "rotation_deg": 90
+        },
+        {
+            "id": 3,
+            "x": 0.726,
+            "y": 0.774,
+            "rotation_deg": 135
+        },
+        {
+            "id": 4,
+            "x": 0.5,
+            "y": 0.82,
+            "rotation_deg": 180
+        },
+        {
+            "id": 5,
+            "x": 0.274,
+            "y": 0.774,
+            "rotation_deg": 225
+        },
+        {
+            "id": 6,
+            "x": 0.18,
+            "y": 0.5,
+            "rotation_deg": 270
+        },
+        {
+            "id": 7,
+            "x": 0.274,
+            "y": 0.226,
+            "rotation_deg": 315
+        }
+    ],
+    "layer_order": [
+        "charger",
+        "plate",
+        "napkin",
+        "cutlery",
+        "glassware",
+        "centerpiece"
+    ],
+    "layer_scales": {
+        "charger": 0.14,
+        "plate": 0.11,
+        "napkin": 0.07,
+        "cutlery": 0.09,
+        "glassware": 0.05,
+        "centerpiece": 0.2
+    },
+    "layer_offsets": {
+        "charger": [
+            0.0,
+            0.0
+        ],
+        "plate": [
+            0.0,
+            0.0
+        ],
+        "napkin": [
+            0.0,
+            0.0
+        ],
+        "cutlery": [
+            0.07,
+            0.0
+        ],
+        "glassware": [
+            0.05,
+            -0.04
+        ],
+        "centerpiece": [
+            0.0,
+            0.0
+        ]
+    },
+    "layer_z_order": {
+        "charger": 10,
+        "plate": 20,
+        "napkin": 30,
+        "cutlery": 15,
+        "glassware": 25,
+        "centerpiece": 50
+    },
+    "rotate_with_zone": {
+        "charger": false,
+        "plate": false,
+        "napkin": true,
+        "cutlery": true,
+        "glassware": false,
+        "centerpiece": false
+    },
+    "shadow": {
+        "enabled": true,
+        "offset_x": 0,
+        "offset_y": 4,
+        "blur_radius": 12,
+        "opacity": 0.35,
+        "color": [
+            0,
+            0,
+            0
+        ]
+    },
+    "paths": {
+        "images_root": "/workspace/wedding_decor/images",
+        "product_dirs": {
+            "charger": "chargers",
+            "plate": "plates",
+            "napkin": "napkins",
+            "cutlery": "cutlery",
+            "glassware": "glassware",
+            "centerpiece": "centerpieces"
+        },
+        "processed_dir": "processed",
+        "output_dir": "output/composites"
+    }
+}

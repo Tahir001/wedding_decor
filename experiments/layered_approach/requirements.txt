@@ -1,0 +1,16 @@
+# Layered Compositing Pipeline - Requirements
+# Core (compositing runs on CPU, no GPU needed)
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# Background removal (GPU recommended)
+torch>=2.1.0
+torchvision>=0.16.0
+transformers>=4.44.0
+accelerate>=0.25.0
+scipy>=1.11.0
+
+# Alpha matting
+pymatting>=1.1.0
